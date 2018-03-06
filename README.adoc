@@ -1,0 +1,10 @@
+= OSeq
+:toc: macro
+:source-highlighter: pygments
+
+Simple list of suspensions, as a composable lazy iterator that behaves like a value.
+
+
+== License
+
+Sequence is available under the BSD license.

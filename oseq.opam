@@ -1,0 +1,28 @@
+opam-version: "1.2"
+name: "oseq"
+version: "0.1"
+author: "Simon Cruanes"
+maintainer: "simon.cruanes.2007@m4x.org"
+license: "BSD-2-clauses"
+build: [
+    [make "build"]
+]
+build-doc: [
+  [make "doc"]
+]
+build-test: [
+  [make "test"]
+]
+depends: [
+  "ocamlfind" {build}
+  "jbuilder" {build}
+  "qcheck" {test}
+  "qtest" {test}
+  "odoc" {doc}
+  "ocaml-version" { >= "4.02" }
+]
+tags: [ "sequence" "iterator" "seq" "pure" "list" ]
+homepage: "https://github.com/c-cube/oseq/"
+doc: "https://c-cube.github.io/oseq/"
+bug-reports: "https://github.com/c-cube/oseq/issues"
+dev-repo: "https://github.com/c-cube/oseq.git"
