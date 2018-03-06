@@ -10,4 +10,4 @@ https://c-cube.github.io/oseq/
 
 == License
 
-Sequence is available under the BSD license.
+BSD license.
