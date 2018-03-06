@@ -1,16 +1,23 @@
 
+(executable
+  ((name make)
+   (modules (make))
+   ))
+
 (rule
   ((targets (run_qtest.ml))
-   (deps ((file Makefile) )) ; (glob_files ../src/**/*.ml{,i})))
+   (deps (make.bc (files_recursively_in ../src)))
    (fallback)
    ;(libraries (qtest qcheck))
    (action
-     (run make qtest-gen))
+     (run ./make.bc -target ${@}))
   ))
 
 (executable
   ((name run_qtest)
-   (libraries (sequence qcheck))
+   (modes (native))
+   (modules (run_qtest))
+   (libraries (oseq gen qcheck containers))
   ))
 
 (alias

@@ -7,14 +7,25 @@ and 'a node =
   | Nil
   | Cons of 'a * 'a t
 
+type 'a sequence = ('a -> unit) -> unit
+type 'a gen = unit -> 'a option
+type 'a equal = 'a -> 'a -> bool
+type 'a ord = 'a -> 'a -> int
+type 'a printer = Format.formatter -> 'a -> unit
+
 val empty : 'a t
 (** Empty generator, with no elements *)
 
 val return : 'a -> 'a t
 (** One-element generator *)
 
+val cons : 'a -> 'a t -> 'a t
+
 val repeat : 'a -> 'a t
 (** Repeat same element endlessly *)
+
+val cycle : 'a t -> 'a t
+(** Cycle through the iterator infinitely. The iterator shouldn't be empty. *)
 
 val iterate : 'a -> ('a -> 'a) -> 'a t
 (** [iterate x f] is [[x; f x; f (f x); f (f (f x)); ...]] *)
@@ -24,11 +35,17 @@ val unfold : ('b -> ('a * 'b) option) -> 'b -> 'a t
     unfolding the ['b] value into a new ['b], and a ['a] which is yielded,
     until [None] is returned. *)
 
-val init : ?limit:int -> (int -> 'a) -> 'a t
+val repeatedly : (unit -> 'a) -> 'a t
+(** Call the same function an infinite number of times (useful for instance
+    if the function is a random generator). *)
+
+val of_gen : 'a gen -> 'a t
+
+val init : ?n:int -> (int -> 'a) -> 'a t
 (** Calls the function, starting from 0, on increasing indices.
-    If [limit] is provided and is a positive int, iteration will
+    If [n] is provided and is a positive int, iteration will
     stop at the limit (excluded).
-    For instance [init ~limit:4 id] will yield 0, 1, 2, and 3. *)
+    For instance [init ~n:4 id] will yield 0, 1, 2, and 3. *)
 
 (** {2 Basic combinators}
 
@@ -48,8 +65,7 @@ val reduce : ('a -> 'a -> 'a) -> 'a t -> 'a
     @raise Invalid_argument on an empty gen *)
 
 val scan : ('b -> 'a -> 'b) -> 'b -> 'a t -> 'b t
-(** Like {!fold}, but keeping successive values of the accumulator.
-    Consumes the generator. *)
+(** Like {!fold}, but keeping successive values of the accumulator. *)
 
 val unfold_scan : ('b -> 'a -> 'b * 'c) -> 'b -> 'a t -> 'c t
 (** A mix of {!unfold} and {!scan}. The current state is combined with
@@ -79,7 +95,8 @@ val app : ('a -> 'b) t -> 'a t -> 'b t
 val fold_map : ('b -> 'a -> 'b) -> 'b -> 'a t -> 'b t
 (** Lazy fold and map. No iteration is performed now, the function will be
     called when the result is traversed. The result is
-    an iterator over the successive states of the fold. *)
+    an iterator over the successive states of the fold.
+    Unlike {!scan}, fold_map does not return the first accumulator *)
 
 val append : 'a t -> 'a t -> 'a t
 (** Append the two gens; the result contains the elements of the first,
@@ -144,23 +161,20 @@ val for_all : ('a -> bool) -> 'a t -> bool
 val exists : ('a -> bool) -> 'a t -> bool
 (** Is the predicate true for at least one element? *)
 
-val min : ?lt:('a -> 'a -> bool) -> 'a t -> 'a
+val min : lt:('a -> 'a -> bool) -> 'a t -> 'a
 (** Minimum element, according to the given comparison function.
     @raise Invalid_argument if the generator is empty *)
 
-val max : ?lt:('a -> 'a -> bool) -> 'a t -> 'a
+val max : lt:('a -> 'a -> bool) -> 'a t -> 'a
 (** Maximum element, see {!min}
     @raise Invalid_argument if the generator is empty *)
 
-val eq : ?eq:('a -> 'a -> bool) -> 'a t -> 'a t -> bool
+val equal : eq:('a -> 'a -> bool) -> 'a t -> 'a t -> bool
 (** Equality of generators. *)
 
-val lexico : ?cmp:('a -> 'a -> int) -> 'a t -> 'a t -> int
+val compare : cmp:('a -> 'a -> int) -> 'a t -> 'a t -> int
 (** Lexicographic comparison of generators. If a generator is a prefix
     of the other one, it is considered smaller. *)
-
-val compare : ?cmp:('a -> 'a -> int) -> 'a t -> 'a t -> int
-(** Synonym for {! lexico} *)
 
 val find : ('a -> bool) -> 'a t -> 'a option
 (** [find p e] returns the first element of [e] to satisfy [p],
@@ -204,20 +218,12 @@ val merge : 'a t t -> 'a t
     their merge is also empty.
     For instance, [merge [1;3;5] [2;4;6]] will be, in disorder, [1;2;3;4;5;6]. *)
 
-val intersection : ?cmp:('a -> 'a -> int) -> 'a t -> 'a t -> 'a t
+val intersection : cmp:('a -> 'a -> int) -> 'a t -> 'a t -> 'a t
 (** Intersection of two sorted sequences. Only elements that occur in both
     inputs appear in the output *)
 
-val sorted_merge : ?cmp:('a -> 'a -> int) -> 'a t -> 'a t -> 'a t
+val sorted_merge : cmp:('a -> 'a -> int) -> 'a t -> 'a t -> 'a t
 (** Merge two sorted sequences into a sorted sequence *)
-
-val sorted_merge_n : ?cmp:('a -> 'a -> int) -> 'a t list -> 'a t
-(** Sorted merge of multiple sorted sequences *)
-
-val tee : ?n:int -> 'a t -> 'a t list
-(** Duplicate the gen into [n] generators (default 2). The generators
-    share the same underlying instance of the gen, so the optimal case is
-    when they are consumed evenly *)
 
 val round_robin : ?n:int -> 'a t -> 'a t list
 (** Split the gen into [n] generators in a fair way. Elements with
@@ -236,17 +242,17 @@ val product : 'a t -> 'b t -> ('a * 'b) t
 (** Cartesian product, in no predictable order. Works even if some of the
     arguments are infinite. *)
 
-val group : ?eq:('a -> 'a -> bool) -> 'a t -> 'a list t
+val group : eq:('a -> 'a -> bool) -> 'a t -> 'a t t
 (** Group equal consecutive elements together. *)
 
-val uniq : ?eq:('a -> 'a -> bool) -> 'a t -> 'a t
+val uniq : eq:('a -> 'a -> bool) -> 'a t -> 'a t
 (** Remove consecutive duplicate elements. Basically this is
     like [fun e -> map List.hd (group e)]. *)
 
-val sort : ?cmp:('a -> 'a -> int) -> 'a t -> 'a t
+val sort : cmp:('a -> 'a -> int) -> 'a t -> 'a t
 (** Sort according to the given comparison function. The gen must be finite. *)
 
-val sort_uniq : ?cmp:('a -> 'a -> int) -> 'a t -> 'a t
+val sort_uniq : cmp:('a -> 'a -> int) -> 'a t -> 'a t
 (** Sort and remove duplicates. The gen must be finite. *)
 
 val chunks : int -> 'a t -> 'a array t
@@ -254,11 +260,8 @@ val chunks : int -> 'a t -> 'a array t
     of successive elements of [e]. The last array may be smaller
     than [n] *)
 
-val permutations : 'a t -> 'a list t
-(** Permutations of the gen. *)
-
-val permutations_heap : 'a t -> 'a array t
-(** Permutations of the gen, using Heap's algorithm. *)
+val permutations : 'a list -> 'a list t
+(** Permutations of the list. *)
 
 val combinations : int -> 'a t -> 'a list t
 (** Combinations of given length. The ordering of the elements within
@@ -296,27 +299,16 @@ val to_string : char t -> string
 val to_buffer : Buffer.t -> char t -> unit
 (** Consumes the iterator and writes to the buffer *)
 
-val rand_int : int -> int t
-(** Random ints in the given range. *)
-
-val int_range : ?step:int -> int -> int -> int t
-(** [int_range ~step a b] generates integers between [a] and [b], included,
-    with steps of length [step] (1 if omitted). [a] is assumed to be smaller
-    than [b], otherwise the result will be empty.
-    @raise Invalid_argument if [step=0]
-    @param step step between two numbers; must not be zero,
-      but it can be negative for decreasing ranges *)
-
 val lines : char t -> string t
 (** Group together chars belonging to the same line *)
-
 
 val unlines : string t -> char t
 (** Explode lines into their chars, adding a ['\n'] after each one *)
 
 module Infix : sig
   val (--) : int -> int -> int t
-  (** Synonym for {! int_range ~by:1} *)
+
+  val (--^) : int -> int -> int t
 
   val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
   (** Monadic bind operator *)
@@ -332,11 +324,10 @@ end
 
 include module type of Infix
 
-val pp : ?start:string -> ?stop:string -> ?sep:string -> ?horizontal:bool ->
-  (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a t -> unit
+val pp : ?sep:string -> 'a printer -> 'a t printer
 (** Pretty print the content of the generator on a formatter. *)
 
-val persistent : 'a t -> 'a t
+val memoize : 'a t -> 'a t
 (** Store content of the transient generator in memory, to be able to iterate
     on it several times later. *)
 
@@ -373,4 +364,19 @@ module IO : sig
   (** [write_lines file g] is similar to [write_str file g ~sep:"\n"] but
       also adds ['\n'] at the end of the file *)
 
+end
+
+(** {2 Monadic Operations} *)
+module type MONAD = sig
+  type 'a t
+  val return : 'a -> 'a t
+  val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
+end
+
+module Traverse(M : MONAD) : sig
+  val sequence_m : 'a M.t t -> 'a t M.t
+
+  val fold_m : ('b -> 'a -> 'b M.t) -> 'b -> 'a t -> 'b M.t
+
+  val map_m : ('a -> 'b M.t) -> 'a t -> 'b t M.t
 end
