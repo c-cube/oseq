@@ -4,6 +4,9 @@
 
 Simple list of suspensions, as a composable lazy iterator that behaves like a value.
 
+== Documentation
+
+https://c-cube.github.io/oseq/
 
 == License
 
