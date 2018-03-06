@@ -39,8 +39,6 @@ val repeatedly : (unit -> 'a) -> 'a t
 (** Call the same function an infinite number of times (useful for instance
     if the function is a random generator). *)
 
-val of_gen : 'a gen -> 'a t
-
 val init : ?n:int -> (int -> 'a) -> 'a t
 (** Calls the function, starting from 0, on increasing indices.
     If [n] is provided and is a positive int, iteration will
@@ -289,6 +287,17 @@ val to_array : 'a t -> 'a array
 
 val of_array : ?start:int -> ?len:int -> 'a array -> 'a t
 (** Iterate on (a slice of) the given array *)
+
+val of_gen : 'a gen -> 'a t
+(** Build a functional sequence from a mutable, imperative generator.
+    The result is properly memoized and can be iterated on several times,
+    as a normal functional value. *)
+
+val of_gen_transient : 'a gen -> 'a t
+(** Build a functional sequence from a mutable, imperative generator.
+    Note that the resulting sequence is not going to be really functional
+    because the underlying generator can be consumed only once.
+    Use {!memoize} to recover the proper semantics. *)
 
 val of_string : ?start:int -> ?len:int -> string -> char t
 (** Iterate on bytes of the string *)

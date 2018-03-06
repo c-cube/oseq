@@ -68,11 +68,6 @@ let rec fold_map f acc l () =
     let acc = f acc x in
     Cons (acc, fold_map f acc tl)
 
-let rec of_gen f () =
-  match f() with
-  | None -> Nil
-  | Some x -> Cons (x, of_gen f)
-
 let rec repeatedly f () = Cons (f(), repeatedly f)
 
 let rec repeat x () = Cons (x, repeat x)
@@ -962,6 +957,11 @@ let of_gen g =
   assert_equal [11;12] (drop 10 l |> take 2 |> to_list);
 *)
 
+let rec of_gen_transient f () =
+  match f() with
+  | None -> Nil
+  | Some x -> Cons (x, of_gen_transient f)
+
 let sort ~cmp l =
   let l = to_list l in
   of_list (List.sort cmp l)
@@ -1050,7 +1050,7 @@ module IO = struct
   let with_in ?mode ?flags filename f =
     with_file_in ?mode ?flags filename
       (fun ic ->
-         f @@ of_gen
+         f @@ of_gen_transient
            (fun () ->
               try Some (input_char ic)
               with End_of_file -> None)
@@ -1059,7 +1059,7 @@ module IO = struct
   let with_lines ?mode ?flags filename f =
     with_file_in ?mode ?flags filename
       (fun ic ->
-        f @@ of_gen @@ fun () ->
+        f @@ of_gen_transient @@ fun () ->
            try Some (input_line ic)
            with End_of_file -> None
       )
