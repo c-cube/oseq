@@ -4,26 +4,13 @@
 
 (*$inject
 
+  let plist f l = "["^String.concat ";" (List.map f l) ^"]"
+  let ppair f1 f2 (x,y) = Printf.sprintf "(%s,%s)" (f1 x)(f2 y)
   let pint i = string_of_int i
-  let pilist l =
-    let b = Buffer.create 15 in
-    let fmt = Format.formatter_of_buffer b in
-    Format.fprintf fmt "%a@?"
-      (pp Format.pp_print_int) (of_list l);
-    Buffer.contents b
-  let pi2list l =
-    let b = Buffer.create 15 in
-    let fmt = Format.formatter_of_buffer b in
-    Format.fprintf fmt "%a@?"
-      (pp (fun fmt (a,b) -> Format.fprintf fmt "%d,%d" a b))
-      (of_list l);
-    Buffer.contents b
-  let pstrlist l =
-    let b = Buffer.create 15 in
-    let fmt = Format.formatter_of_buffer b in
-    Format.fprintf fmt "%a@?"
-      (pp Format.pp_print_string) (of_list l);
-    Buffer.contents b
+  let pilist l = plist pint l
+  let pilistlist l = plist (plist pint) l
+  let pi2list l = plist (ppair pint pint) l
+  let pstrlist l = plist (Printf.sprintf "%S") l
 *)
 
 type 'a t = unit -> 'a node
@@ -47,13 +34,14 @@ let[@inline] return x () = Cons (x, empty)
 let[@inline] cons a b () = Cons (a,b)
 
 let rec (--) i j () =
-  if i>j then Nil
-  else Cons (i, i+1 -- j)
+  if i=j then Cons (i, empty)
+  else if i<j then Cons (i, i+1 -- j)
+  else Cons (i, i-1--j)
 
-(*$T
-  0-- 5 |> to_list = [0;1;2;3;4;5]
-  0-- 0 |> to_list = [0]
-  5-- 2 |> to_list = [5;4;3;2]
+(*$= & ~printer:pilist
+  [0;1;2;3;4;5] (0-- 5 |> to_list)
+  [0]           (0-- 0 |> to_list)
+  [5;4;3;2]     (5-- 2 |> to_list)
 *)
 
 let (--^) i j =
@@ -61,11 +49,11 @@ let (--^) i j =
   else if i<j then i -- (j-1)
   else i -- (j+1)
 
-(*$T
-  1 --^ 5 |> to_list = [1;2;3;4]
-  5 --^ 1 |> to_list = [5;4;3;2]
-  1 --^ 2 |> to_list = [1]
-  0 --^ 0 |> to_list = []
+(*$= & ~printer:pilist
+  [1;2;3;4] (1 --^ 5 |> to_list) 
+  [5;4;3;2] (5 --^ 1 |> to_list) 
+  [1]       (1 --^ 2 |> to_list) 
+  []        (0 --^ 0 |> to_list) 
 *)
 
 let rec map f l () =
@@ -210,10 +198,10 @@ and fm_app_ f l l' () = match l () with
   | Cons (x, tl) -> Cons (x, fm_app_ f tl l')
 
 (*$Q
-  Q.(pair (fun1 Observable.int (list int)) (list int)) (fun (f, l) -> \
+  Q.(pair (fun1 Observable.int (small_list int)) (small_list int)) (fun (f, l) -> \
     (of_list l |> flat_map (fun x -> of_list (Q.Fn.apply f x)) |> to_list) \
     = CCList.flat_map (Q.Fn.apply f) l)
-  Q.(pair (fun1 Observable.int (list int)) (list int)) (fun (f, l) -> \
+  Q.(pair (fun1 Observable.int (small_list int)) (small_list int)) (fun (f, l) -> \
     (of_list l |> flat_map (fun x -> of_list (Q.Fn.apply f x)) |> to_list) \
     = (of_list l |> map (Q.Fn.apply f) |> map of_list |> flatten |> to_list))
   *)
@@ -225,8 +213,8 @@ let take_nth n g =
     | Cons (_, tl) when i>0 -> aux (i-1) tl ()
     | Cons (x, tl) ->
       assert (i=0);
-      Cons (x, aux n tl)
-  in aux n g
+      Cons (x, aux (n-1) tl)
+  in aux 0 g
 
 let rec nth i l =
   match l() with
@@ -603,14 +591,19 @@ let chunks n e =
 
 (* Put [x] between elements of [enum] *)
 let intersperse x g =
-  let rec aux_elem g () = match g() with
+  let rec aux_with_sep g () = match g() with
     | Nil -> Nil
     | Cons (y, g') ->
-      Cons (y, cons x (aux_elem g'))
-  in aux_elem g
+      Cons (x, cons y (aux_with_sep g'))
+  in
+  fun () -> match g() with
+    | Nil -> Nil
+    | Cons (x, g) -> Cons (x, aux_with_sep g)
 
-(*$T
-  intersperse 0 (1--5) |> to_list = [1;0;2;0;3;0;4;0;5]
+(*$= & ~printer:pilist
+  [] (intersperse 0 empty |> to_list)
+  [1] (intersperse 0 (return 1) |> to_list)
+  [1;0;2;0;3;0;4;0;5] (intersperse 0 (1--5) |> to_list)
 *)
 
 (* functional queue *)
@@ -693,17 +686,16 @@ let intersection ~cmp gen1 gen2 : _ t =
       if c = 0  (* equal elements, yield! *)
       then Cons (y1, fun () -> next (tl1()) (tl2()) ())
       else if c < 0 (* drop y1 *)
-      then Cons (y1, fun () -> next (tl1()) x2 ())
+      then next (tl1()) x2 ()
       else (* drop y2 *)
-        Cons (y1, fun () -> next x1 (tl2()) ())
+        next x1 (tl2()) ()
     | _ -> Nil
   in
   fun () -> next (gen1()) (gen2()) ()
 
-(*$T
-  intersection ~cmp:Pervasives.compare \
-  (of_list [1;1;2;3;4;8]) (of_list [1;2;4;5;6;7;8;9]) \
-    |> to_list = [1;2;4;8]
+(*$= & ~printer:pilist
+  [1;2;4;8] (intersection ~cmp:Pervasives.compare \
+    (of_list [1;1;2;3;4;8]) (of_list [1;2;4;5;6;7;8;9]) |> to_list)
 *)
 
 let rec zip_with f a b () =
@@ -755,24 +747,24 @@ let round_robin ?(n=2) gen : _ t list =
   in
   start 0
 
-(*$T
-  round_robin ~n:3 (1--12) |> List.map to_list = \
-    [[1;4;7;10]; [2;5;8;11]; [3;6;9;12]]
+(*$= & ~printer:pilistlist
+  [[1;4;7;10]; [2;5;8;11]; [3;6;9;12]] \
+  (round_robin ~n:3 (1--12) |> List.map to_list)
 *)
 
-(*$R
+(*$R round_robin
   let e = round_robin ~n:2 (1--10) in
   match e with
   | [a;b] ->
-    OUnit.assert_equal [1;3;5;7;9] (to_list a);
-    OUnit.assert_equal [2;4;6;8;10] (to_list b)
+    OUnit.assert_equal ~printer:pilist [1;3;5;7;9] (to_list a);
+    OUnit.assert_equal ~printer:pilist [2;4;6;8;10] (to_list b)
   | _ -> OUnit.assert_failure "wrong list lenght"
 *)
 
-(*$R
+(*$R round_robin
   let e = round_robin ~n:3 (1 -- 999) in
   let l = List.map length e in
-  OUnit.assert_equal [333;333;333] l;
+  OUnit.assert_equal ~printer:pilist [333;333;333] l;
 *)
 
 
@@ -799,16 +791,16 @@ let permutations l =
     | [] -> return (List.rev (x::left))
     | y :: right' ->
       cons
-        (List.rev_append left (x::right'))
+        (List.rev_append left (x::right))
         (insert_ x (y::left) right')
   in
   aux (List.length l) l
 
-(*$T permutations
-  permutations CCList.(1--3) |> to_list |> List.sort Pervasives.compare = \
-    [[1;2;3]; [1;3;2]; [2;1;3]; [2;3;1]; [3;1;2]; [3;2;1]]
-  permutations [] |> to_list = [[]]
-  permutations [1] |> to_list = [[1]]
+(*$= permutations & ~printer:pilistlist
+  [[1;2;3]; [1;3;2]; [2;1;3]; [2;3;1]; [3;1;2]; [3;2;1]] \
+  (permutations CCList.(1--3) |> to_list |> List.sort Pervasives.compare)
+  [[]] (permutations [] |> to_list)
+  [[1]] (permutations [1] |> to_list)
 *)
 
 let combinations n g =
@@ -819,19 +811,19 @@ let combinations n g =
     | _, Cons (x,tail) ->
       let m1 = make_state (n-1) tail in
       let m2 = make_state n tail in
-      append (add x m1) (add x m2) ()
-  and add x m () = match m () with
-    | Nil -> Nil
-    | Cons (l, m') -> Cons (x::l, add x m')
+      add x m1 m2 ()
+  and add x m1 m2 () = match m1 () with
+    | Nil -> m2 ()
+    | Cons (l, m1') -> Cons (x::l, add x m1' m2)
   in
   make_state n g
 
-(*$T
-  combinations 2 (1--4) |> map (List.sort Pervasives.compare) \
-    |> to_list |> List.sort Pervasives.compare = \
-    [[1;2]; [1;3]; [1;4]; [2;3]; [2;4]; [3;4]]
-  combinations 0 (1--4) |> to_list = [[]]
-  combinations 1 (return 1) |> to_list = [[1]]
+(*$= & ~printer:pilistlist
+  [[1;2]; [1;3]; [1;4]; [2;3]; [2;4]; [3;4]] \
+    (combinations 2 (1--4) |> map (List.sort Pervasives.compare) \
+    |> to_list |> List.sort Pervasives.compare)
+  [[]] (combinations 0 (1--4) |> to_list)
+  [[1]] (combinations 1 (return 1) |> to_list)
 *)
 
 let power_set g : _ t =
@@ -842,21 +834,18 @@ let power_set g : _ t =
       add x m ()
   and add x m () = match m () with
     | Nil -> Nil
-    | Cons (l, m') ->
-      add_to x l m' ()
-  and add_to x l m' () =
-    Cons (x :: l, add x m')
+    | Cons (l, m') -> Cons (x :: l, cons l (add x m'))
   in
   let l = fold (fun acc x->x::acc) [] g in
   make_state l
 
-(*$T
-  power_set (1--3) |> map (List.sort Pervasives.compare) \
-    |> to_list |> List.sort Pervasives.compare = \
-    [[]; [1]; [1;2]; [1;2;3]; [1;3]; [2]; [2;3]; [3]]
-  power_set empty |> to_list = [[]]
-  power_set (return 1) |> map (List.sort Pervasives.compare) \
-    |> to_list |> List.sort Pervasives.compare = [[]; [1]]
+(*$= & ~printer:pilistlist
+  [[]; [1]; [1;2]; [1;2;3]; [1;3]; [2]; [2;3]; [3]] \
+  (power_set (1--3) |> map (List.sort Pervasives.compare) \
+    |> to_list |> List.sort Pervasives.compare)
+  [[]] (power_set empty |> to_list)
+  [[]; [1]] (power_set (return 1) |> map (List.sort Pervasives.compare) \
+    |> to_list |> List.sort Pervasives.compare)
 *)
 
 
