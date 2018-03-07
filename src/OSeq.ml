@@ -25,13 +25,13 @@ type 'a equal = 'a -> 'a -> bool
 type 'a ord = 'a -> 'a -> int
 type 'a printer = Format.formatter -> 'a -> unit
 
-let[@inline] empty () = Nil
+let empty () = Nil
 
-let[@inline] is_empty l = match l() with Nil -> true | Cons _ -> false
+let is_empty l = match l() with Nil -> true | Cons _ -> false
 
-let[@inline] return x () = Cons (x, empty)
+let return x () = Cons (x, empty)
 
-let[@inline] cons a b () = Cons (a,b)
+let cons a b () = Cons (a,b)
 
 let rec (--) i j () =
   if i=j then Cons (i, empty)
@@ -167,7 +167,7 @@ let iteri f l =
   in
   aux f l 0
 
-let[@inline] length l = fold (fun acc _ -> acc+1) 0 l
+let length l = fold (fun acc _ -> acc+1) 0 l
 
 (*$T
   cycle (of_list [1;2]) |> take 5 |> to_list = [1;2;1;2;1]
@@ -387,7 +387,7 @@ let rec find p e = match e () with
    find (fun x -> x>5) (1--4) = None
 *)
 
-let[@inline] sum e = fold (+) 0 e
+let sum e = fold (+) 0 e
 
 (*$T
   sum (1--10) = 55
@@ -523,7 +523,7 @@ let product_with f l1 l2 =
 let product l1 l2 =
   product_with (fun x y -> x,y) l1 l2
 
-let[@inline] app fs xs = product_with (fun f x -> f x) fs xs
+let app fs xs = product_with (fun f x -> f x) fs xs
 
 module Infix = struct
   let (>>=) xs f = flat_map f xs
@@ -698,7 +698,7 @@ let rec zip_with f a b () =
   | Cons (xa,tla), Cons (xb,tlb) -> Cons (f xa xb, zip_with f tla tlb)
   | _ -> Nil
 
-let[@inline] zip a b = zip_with (fun x y -> x,y) a b
+let zip a b = zip_with (fun x y -> x,y) a b
 
 (*$Q
   (Q.list Q.small_int) (fun l -> \
