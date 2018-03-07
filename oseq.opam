@@ -18,11 +18,14 @@ depends: [
   "jbuilder" {build}
   "qcheck" {test}
   "qtest" {test}
+  "gen" {test}
+  "containers" {test}
   "odoc" {doc}
-  "ocaml-version" { >= "4.02" }
 ]
 tags: [ "sequence" "iterator" "seq" "pure" "list" ]
 homepage: "https://github.com/c-cube/oseq/"
 doc: "https://c-cube.github.io/oseq/"
 bug-reports: "https://github.com/c-cube/oseq/issues"
 dev-repo: "https://github.com/c-cube/oseq.git"
+available: [ocaml-version >= "4.02.0"]
+
