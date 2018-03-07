@@ -1050,7 +1050,7 @@ module IO = struct
   let with_in ?mode ?flags filename f =
     with_file_in ?mode ?flags filename
       (fun ic ->
-         f @@ of_gen_transient
+         f @@ of_gen @@
            (fun () ->
               try Some (input_char ic)
               with End_of_file -> None)
@@ -1059,7 +1059,7 @@ module IO = struct
   let with_lines ?mode ?flags filename f =
     with_file_in ?mode ?flags filename
       (fun ic ->
-        f @@ of_gen_transient @@ fun () ->
+        f @@ of_gen @@ fun () ->
            try Some (input_line ic)
            with End_of_file -> None
       )
