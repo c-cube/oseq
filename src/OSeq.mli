@@ -7,6 +7,8 @@ and 'a node =
   | Nil
   | Cons of 'a * 'a t
 
+type 'a seq = 'a t (* alias *)
+
 type 'a sequence = ('a -> unit) -> unit
 type 'a gen = unit -> 'a option
 type 'a equal = 'a -> 'a -> bool
@@ -340,6 +342,53 @@ val memoize : 'a t -> 'a t
 (** Store content of the transient generator in memory, to be able to iterate
     on it several times later. *)
 
+(** {2 Easy interface to write Generators} *)
+
+(** This interface is designed to make it easy to build complex streams of
+    values in a way that resembles Python's generators (using "yield").
+
+    {[
+      let naturals : int OSeq.t = OSeq.Generator.(
+          let rec aux n = yield n >>= fun () -> aux (n+1) in
+          run (aux 0)
+        )
+    ]}
+
+    {[
+      type 'a tree = E | N of 'a tree * 'a * 'a tree
+
+      let traverse (t:'a tree) : 'a OSeq =
+        let open OSeq.Generator in
+        let rec trav = function
+          | E -> empty
+          | N (l,v,r) -> trav l >>= fun () -> yield v >>= fun () -> trav r
+        in
+        run (trav t)
+    ]}
+
+   *)
+module Generator : sig
+  type 'a t
+  (** Type for writing generators that return a sequence of ['a] *)
+
+  val empty : 'a t
+  (** Empty generator, yields no value *)
+
+  val yield : 'a -> 'a t
+  (** Yield one value *)
+
+  val (>>=) : 'a t -> (unit -> 'a t) -> 'a t
+  (** [gen1 >>= fun () -> gen2] first yields all values from [gen1],
+      and then all values from [gen2] *)
+
+  val delay : (unit -> 'a t) -> 'a t
+  (** Delayed generator, will evaluate the function when needed *)
+
+  val run : 'a t -> 'a seq
+  (** Iterator over the values yielded by the generator *)
+end
+
+(** {2 Basic IO} *)
 module IO : sig
   val with_in : ?mode:int -> ?flags:open_flag list ->
     string ->

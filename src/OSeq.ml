@@ -19,6 +19,8 @@ and 'a node =
   | Nil
   | Cons of 'a * 'a t
 
+type 'a seq = 'a t (* alias *)
+
 type 'a sequence = ('a -> unit) -> unit
 type 'a gen = unit -> 'a option
 type 'a equal = 'a -> 'a -> bool
@@ -1033,6 +1035,55 @@ let rec memoize f =
       in
       r := MemoSave l;
       l
+
+module Generator = struct
+  type 'a t =
+    | Skip
+    | Yield of 'a
+    | Delay of (unit -> 'a t)
+    | Append of 'a t * 'a t
+
+  let empty = Skip
+
+  let yield x = Yield x
+
+  let (>>=) x f = Append (x,Delay f)
+
+  let delay f = Delay f
+
+  let run (x:'a t) : 'a seq =
+    let rec aux l () = match l with
+      | [] -> Nil
+      | Skip :: tl -> aux tl ()
+      | Yield x :: tl -> Cons (x, aux tl)
+      | Delay f :: tl -> aux (f () :: tl) ()
+      | Append (x1, x2) :: tl -> aux (x1 :: x2 :: tl) ()
+    in
+    aux [x]
+end
+
+(*$R
+  let naturals =
+    Generator.(let rec aux n = yield n>>= fun () -> aux (n+1) in run (aux 0))
+  in
+  let naturals' = unfold (fun n -> Some (n,n+1)) 0 in
+  assert_equal ~printer:Q.Print.(list int)
+    (take 100 naturals' |> to_list) (take 100 naturals |> to_list)
+*)
+
+(*$QR
+  Q.(small_list int) (fun l ->
+    let seq = of_list l in
+    let seq2 =
+      let open Generator in
+      let rec aux seq = match seq() with
+        | Nil -> empty
+        | Cons (x, tl) -> yield x >>= fun () -> aux tl
+      in
+      run (aux seq)
+    in
+    equal Pervasives.(=) seq seq2)
+*)
 
 module IO = struct
   let with_file_in ?(mode=0o644) ?(flags=[]) filename f =
