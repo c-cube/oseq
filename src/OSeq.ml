@@ -698,8 +698,6 @@ let rec zip_with f a b () =
   | Cons (xa,tla), Cons (xb,tlb) -> Cons (f xa xb, zip_with f tla tlb)
   | _ -> Nil
 
-let zip a b = zip_with (fun x y -> x,y) a b
-
 (*$Q
   (Q.list Q.small_int) (fun l -> \
     zip_with (fun x y->x,y) (of_list l) (of_list l) \
