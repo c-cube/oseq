@@ -498,29 +498,22 @@ let unfold_scan f acc g =
 *)
 
 let product_with f l1 l2 =
-  let rec left_ h1 tl1 h2 tl2 () =
-    match tl1() with
-    | Nil -> right_ ~die:true h1 tl1 h2 tl2 ()
-    | Cons (x, tl1') ->
-      map_left_ x h2
-        (right_ ~die:false (x::h1) tl1' h2 tl2)
-        ()
-  and right_ ~die h1 tl1 h2 tl2 () =
-    match tl2() with
-    | Nil when die -> Nil
-    | Nil -> left_ h1 tl1 h2 tl2 ()
-    | Cons (y, tl2') ->
-      map_right_ h1 y
-        (left_ h1 tl1 (y::h2) tl2')
-        ()
-  and map_left_ x l kont () = match l with
-    | [] -> kont()
-    | y::l' -> Cons (f x y, map_left_ x l' kont)
-  and map_right_ l y kont () = match l with
-    | [] -> kont()
-    | x::l' -> Cons (f x y, map_right_ l' y kont)
+  let rec next_left l1 l2 () = match l1() with
+    | Nil -> Nil
+    | Cons (x1, tl1) -> append_all ~tl1 ~l2_init:l2 x1 l2 ()
+  and append_all ~tl1 ~l2_init x1 l2 () = match l2() with
+    | Nil -> next_left tl1 l2_init ()
+    | Cons (x2, tl2) ->
+      Cons (f x1 x2, append_all ~tl1 ~l2_init x1 tl2)
   in
-  left_ [] l1 [] l2
+  next_left l1 l2
+
+(*$Q
+  Q.(pair (small_list int)(small_list int)) (fun (l1,l2) -> \
+    let lsort=List.sort Pervasives.compare in \
+    lsort (List.flatten@@List.map (fun x ->List.map (fun y->x,y) l2)l1) = \
+    lsort (product (of_list l1)(of_list l2) |> to_list))
+*)
 
 let product l1 l2 =
   product_with (fun x y -> x,y) l1 l2
