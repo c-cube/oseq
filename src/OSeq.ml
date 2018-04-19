@@ -15,11 +15,18 @@
 
 type 'a t = unit -> 'a node
 
-and 'a node =
+and 'a node = 'a Seq.node =
   | Nil
   | Cons of 'a * 'a t
 
 type 'a seq = 'a t (* alias *)
+
+(* compat test, ensure Seq.t and OSeq.t are the same *)
+(*$inject
+  let () =
+    ignore (Seq.empty : int OSeq.t);
+    ignore (OSeq.empty : int Seq.t)
+*)
 
 type 'a sequence = ('a -> unit) -> unit
 type 'a gen = unit -> 'a option

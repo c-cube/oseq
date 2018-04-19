@@ -3,7 +3,7 @@
 
 type 'a t = unit -> 'a node
 
-and 'a node =
+and 'a node = 'a Seq.node =
   | Nil
   | Cons of 'a * 'a t
 

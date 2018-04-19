@@ -21,6 +21,7 @@ depends: [
   "gen" {test}
   "containers" {test}
   "odoc" {doc}
+  "seq"
 ]
 tags: [ "sequence" "iterator" "seq" "pure" "list" ]
 homepage: "https://github.com/c-cube/oseq/"
