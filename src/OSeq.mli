@@ -387,7 +387,7 @@ val memoize : 'a t -> 'a t
         run (trav t)
     ]}
 
-   *)
+*)
 module Generator : sig
   type 'a t
   (** Type for writing generators (of type ['a OSeq.Generator.t])

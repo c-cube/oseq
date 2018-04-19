@@ -210,7 +210,7 @@ and fm_app_ f l l' () = match l () with
   Q.(pair (fun1 Observable.int (small_list int)) (small_list int)) (fun (f, l) -> \
     (of_list l |> flat_map (fun x -> of_list (Q.Fn.apply f x)) |> to_list) \
     = (of_list l |> map (Q.Fn.apply f) |> map of_list |> flatten |> to_list))
-  *)
+*)
 
 let take_nth n g =
   let rec aux i g () =
@@ -376,8 +376,8 @@ let compare ~cmp gen1 gen2 : int =
     match gen1(), gen2() with
     | Nil, Nil -> 0
     | Cons (x1,tl1), Cons (x2,tl2) ->
-        let c = cmp x1 x2 in
-        if c <> 0 then c else aux tl1 tl2
+      let c = cmp x1 x2 in
+      if c <> 0 then c else aux tl1 tl2
     | Cons _, Nil -> 1
     | Nil, Cons _ -> -1
   in aux gen1 gen2
@@ -578,8 +578,8 @@ let chunks n e =
     else match e() with
       | Nil -> Cons (Array.sub a 0 i, empty)  (* last array is not full *)
       | Cons (x, tl) ->
-          a.(i) <- x;
-          fill a (i+1) tl
+        a.(i) <- x;
+        fill a (i+1) tl
   in
   aux e
 
@@ -1102,17 +1102,17 @@ module IO = struct
     with_file_in ?mode ?flags filename
       (fun ic ->
          f @@ of_gen @@
-           (fun () ->
-              try Some (input_char ic)
-              with End_of_file -> None)
+         (fun () ->
+            try Some (input_char ic)
+            with End_of_file -> None)
       )
 
   let with_lines ?mode ?flags filename f =
     with_file_in ?mode ?flags filename
       (fun ic ->
-        f @@ of_gen @@ fun () ->
-           try Some (input_line ic)
-           with End_of_file -> None
+         f @@ of_gen @@ fun () ->
+         try Some (input_line ic)
+         with End_of_file -> None
       )
 
   let with_file_out ?(mode=0o644) ?(flags=[Open_creat;Open_wronly]) filename f =
@@ -1183,8 +1183,8 @@ let pp ?(sep=",") pp_item fmt l =
       pp fmt l'
   in
   match l() with
-    | Nil -> ()
-    | Cons (x,l') -> pp_item fmt x; pp fmt l'
+  | Nil -> ()
+  | Cons (x,l') -> pp_item fmt x; pp fmt l'
 
 (* test for compat with seq *)
 (*$inject
