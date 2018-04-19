@@ -60,6 +60,9 @@ val is_empty : _ t -> bool
 val fold : ('b -> 'a -> 'b) -> 'b -> 'a t -> 'b
 (** Fold on the generator, tail-recursively. Consumes the generator. *)
 
+val fold_left : ('b -> 'a -> 'b) -> 'b -> 'a t -> 'b
+(** Alias to {!fold} *)
+
 val reduce : ('a -> 'a -> 'a) -> 'a t -> 'a
 (** Fold on non-empty sequences. Consumes the generator.
     @raise Invalid_argument on an empty gen *)

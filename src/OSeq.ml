@@ -158,6 +158,8 @@ let rec fold f acc l = match l() with
   | Nil -> acc
   | Cons (x,tl) -> fold f (f acc x) tl
 
+let fold_left = fold
+
 let reduce f g =
   match g() with
   | Nil -> invalid_arg "reduce"
@@ -1183,3 +1185,8 @@ let pp ?(sep=",") pp_item fmt l =
   match l() with
     | Nil -> ()
     | Cons (x,l') -> pp_item fmt x; pp fmt l'
+
+(* test for compat with seq *)
+(*$inject
+  module Foo : module type of Seq = OSeq
+*)
