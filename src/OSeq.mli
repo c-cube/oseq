@@ -360,7 +360,7 @@ val memoize : 'a t -> 'a t
     {[
       type 'a tree = E | N of 'a tree * 'a * 'a tree
 
-      let traverse (t:'a tree) : 'a OSeq =
+      let traverse (t:'a tree) : 'a OSeq.t =
         let open OSeq.Generator in
         let rec trav = function
           | E -> empty
