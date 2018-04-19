@@ -16,10 +16,10 @@ type 'a ord = 'a -> 'a -> int
 type 'a printer = Format.formatter -> 'a -> unit
 
 val empty : 'a t
-(** Empty generator, with no elements *)
+(** Empty iterator, with no elements *)
 
 val return : 'a -> 'a t
-(** One-element generator *)
+(** One-element iterator *)
 
 val cons : 'a -> 'a t -> 'a t
 
@@ -27,48 +27,63 @@ val repeat : 'a -> 'a t
 (** Repeat same element endlessly *)
 
 val cycle : 'a t -> 'a t
-(** Cycle through the iterator infinitely. The iterator shouldn't be empty. *)
+(** Cycle through the iterator infinitely. The iterator shouldn't be empty.
+    {[# OSeq.(cycle (1--3) |> take 10 |> to_list);;
+      - : int list = [1; 2; 3; 1; 2; 3; 1; 2; 3; 1]
+    ]}
+*)
 
 val iterate : 'a -> ('a -> 'a) -> 'a t
-(** [iterate x f] is [[x; f x; f (f x); f (f (f x)); ...]] *)
+(** [iterate x f] is [[x; f x; f (f x); f (f (f x)); ...]].
+
+    {[# OSeq.(iterate 0 succ |> take 10 |> to_list);;
+      - : int list = [0; 1; 2; 3; 4; 5; 6; 7; 8; 9]
+    ]}
+*)
 
 val unfold : ('b -> ('a * 'b) option) -> 'b -> 'a t
 (** Dual of {!fold}, with a deconstructing operation. It keeps on
     unfolding the ['b] value into a new ['b], and a ['a] which is yielded,
-    until [None] is returned. *)
+    until [None] is returned.
+
+    {[# OSeq.(unfold (fun x -> if x<5 then Some (string_of_int x, x+1) else None) 0 |> to_list);;
+      - : string list = ["0"; "1"; "2"; "3"; "4"]
+    ]}
+*)
 
 val repeatedly : (unit -> 'a) -> 'a t
 (** Call the same function an infinite number of times (useful for instance
-    if the function is a random generator). *)
+    if the function is a random iterator). *)
 
 val init : ?n:int -> (int -> 'a) -> 'a t
 (** Calls the function, starting from 0, on increasing indices.
     If [n] is provided and is a positive int, iteration will
     stop at the limit (excluded).
-    For instance [init ~n:4 id] will yield 0, 1, 2, and 3. *)
+    For instance [init ~n:4 (fun x->x)] will yield 0, 1, 2, and 3. *)
 
-(** {2 Basic combinators}
-
-    {b Note}: those combinators, applied to generators (not restartable
-    generators) {i consume} their argument. Sometimes they consume it lazily,
-    sometimes eagerly, but in any case once [f gen] has been called (with [f] a
-    combinator), [gen] shouldn't be used anymore. *)
+(** {2 Basic combinators} *)
 
 val is_empty : _ t -> bool
-(** Check whether the gen is empty. Pops an element, if any *)
+(** Check whether the iterator is empty. Pops an element, if any *)
 
 val fold : ('b -> 'a -> 'b) -> 'b -> 'a t -> 'b
-(** Fold on the generator, tail-recursively. Consumes the generator. *)
+(** Fold on the iterator, tail-recursively. *)
 
 val fold_left : ('b -> 'a -> 'b) -> 'b -> 'a t -> 'b
 (** Alias to {!fold} *)
 
 val reduce : ('a -> 'a -> 'a) -> 'a t -> 'a
-(** Fold on non-empty sequences. Consumes the generator.
-    @raise Invalid_argument on an empty gen *)
+(** Fold on non-empty iterators.
+    @raise Invalid_argument on an empty iterator *)
 
 val scan : ('b -> 'a -> 'b) -> 'b -> 'a t -> 'b t
-(** Like {!fold}, but keeping successive values of the accumulator. *)
+(** Like {!fold}, but keeping successive values of the accumulator.
+
+    {[
+      # OSeq.(scan (+) 0 (1--5) |> to_list);;
+      - : int list = [0; 1; 3; 6; 10; 15]
+    ]}
+*)
 
 val unfold_scan : ('b -> 'a -> 'b * 'c) -> 'b -> 'a t -> 'c t
 (** A mix of {!unfold} and {!scan}. The current state is combined with
@@ -76,13 +91,13 @@ val unfold_scan : ('b -> 'a -> 'b * 'c) -> 'b -> 'a t -> 'c t
     of type 'c. *)
 
 val iter : ('a -> unit) -> 'a t -> unit
-(** Iterate on the gen, consumes it. *)
+(** Iterate on the iterator . *)
 
 val iteri : (int -> 'a -> unit) -> 'a t -> unit
-(** Iterate on elements with their index in the gen, from 0, consuming it. *)
+(** Iterate on elements with their index in the iterator, from 0. *)
 
 val length : _ t -> int
-(** Length of an gen (linear time), consuming it *)
+(** Length of an iterator (linear time). *)
 
 val map : ('a -> 'b) -> 'a t -> 'b t
 (** Lazy map. No iteration is performed now, the function will be called
@@ -99,22 +114,24 @@ val fold_map : ('b -> 'a -> 'b) -> 'b -> 'a t -> 'b t
 (** Lazy fold and map. No iteration is performed now, the function will be
     called when the result is traversed. The result is
     an iterator over the successive states of the fold.
-    Unlike {!scan}, fold_map does not return the first accumulator *)
+    The final accumulator is discarded.
+    Unlike {!scan}, fold_map does not return the first accumulator.
+*)
 
 val append : 'a t -> 'a t -> 'a t
-(** Append the two gens; the result contains the elements of the first,
-    then the elements of the second gen. *)
+(** Append the two iterators; the result contains the elements of the first,
+    then the elements of the second iterator. *)
 
 val flatten : 'a t t -> 'a t
-(** Flatten the generator of generators *)
+(** Flatten the iterator of iterators *)
 
 val flat_map : ('a -> 'b t) -> 'a t -> 'b t
-(** Monadic bind; each element is transformed to a sub-gen
+(** Monadic bind; each element is transformed to a sub-iterator
     which is then iterated on, before the next element is processed,
     and so on. *)
 
 val mem : eq:('a -> 'a -> bool) -> 'a -> 'a t -> bool
-(** Is the given element, member of the gen? *)
+(** Is the given element, member of the iterator? *)
 
 val take : int -> 'a t -> 'a t
 (** Take at most n elements *)
@@ -124,7 +141,7 @@ val drop : int -> 'a t -> 'a t
 
 val nth : int -> 'a t -> 'a
 (** n-th element, or Not_found
-    @raise Not_found if the generator contains less than [n] arguments *)
+    @raise Not_found if the iterator contains less than [n] arguments *)
 
 val take_nth : int -> 'a t -> 'a t
 (** [take_nth n g] returns every element of [g] whose index
@@ -135,24 +152,24 @@ val filter : ('a -> bool) -> 'a t -> 'a t
 (** Filter out elements that do not satisfy the predicate.  *)
 
 val take_while : ('a -> bool) -> 'a t -> 'a t
-(** Take elements while they satisfy the predicate. The initial generator
+(** Take elements while they satisfy the predicate. The initial iterator
     itself is not to be used anymore after this. *)
 
 val fold_while : ('a -> 'b -> 'a * [`Stop | `Continue]) -> 'a -> 'b t -> 'a
 (** Fold elements until (['a, `Stop]) is indicated by the accumulator. *)
 
 val drop_while : ('a -> bool) -> 'a t -> 'a t
-(** Drop elements while they satisfy the predicate. The initial generator
+(** Drop elements while they satisfy the predicate. The initial iterator
     itself should not be used anymore, only the result of [drop_while]. *)
 
 val filter_map : ('a -> 'b option) -> 'a t -> 'b t
 (** Maps some elements to 'b, drop the other ones *)
 
 val zip_index : 'a t -> (int * 'a) t
-(** Zip elements with their index in the gen *)
+(** Zip elements with their index in the iterator *)
 
 val unzip : ('a * 'b) t -> 'a t * 'b t
-(** Unzip into two sequences, splitting each pair *)
+(** Unzip into two iterators, splitting each pair *)
 
 val partition : ('a -> bool) -> 'a t -> 'a t * 'a t
 (** [partition p l] returns the elements that satisfy [p],
@@ -166,17 +183,17 @@ val exists : ('a -> bool) -> 'a t -> bool
 
 val min : lt:('a -> 'a -> bool) -> 'a t -> 'a
 (** Minimum element, according to the given comparison function.
-    @raise Invalid_argument if the generator is empty *)
+    @raise Invalid_argument if the iterator is empty *)
 
 val max : lt:('a -> 'a -> bool) -> 'a t -> 'a
 (** Maximum element, see {!min}
-    @raise Invalid_argument if the generator is empty *)
+    @raise Invalid_argument if the iterator is empty *)
 
 val equal : eq:('a -> 'a -> bool) -> 'a t -> 'a t -> bool
-(** Equality of generators. *)
+(** Equality of iterators. *)
 
 val compare : cmp:('a -> 'a -> int) -> 'a t -> 'a t -> int
-(** Lexicographic comparison of generators. If a generator is a prefix
+(** Lexicographic comparison of iterators. If a iterator is a prefix
     of the other one, it is considered smaller. *)
 
 val find : ('a -> bool) -> 'a t -> 'a option
@@ -189,10 +206,10 @@ val sum : int t -> int
 (** {2 Multiple iterators} *)
 
 val map2 : ('a -> 'b -> 'c) -> 'a t -> 'b t -> 'c t
-(** Map on the two sequences. Stops once one of them is exhausted.*)
+(** Map on the two iterators. Stops once one of them is exhausted.*)
 
 val iter2 : ('a -> 'b -> unit) -> 'a t -> 'b t -> unit
-(** Iterate on the two sequences. Stops once one of them is exhausted.*)
+(** Iterate on the two iterators. Stops once one of them is exhausted.*)
 
 val fold2 : ('acc -> 'a -> 'b -> 'acc) -> 'acc -> 'a t -> 'b t -> 'acc
 (** Fold the common prefix of the two iterators *)
@@ -214,32 +231,32 @@ val zip : 'a t -> 'b t -> ('a * 'b) t
 (** {2 Complex combinators} *)
 
 val merge : 'a t t -> 'a t
-(** Pick elements fairly in each sub-generator. The merge of gens
+(** Pick elements fairly in each sub-iterator. The merge of gens
     [e1, e2, ... ] picks elements in [e1], [e2],
-    in [e3], [e1], [e2] .... Once a generator is empty, it is skipped;
+    in [e3], [e1], [e2] .... Once a iterator is empty, it is skipped;
     when they are all empty, and none remains in the input,
     their merge is also empty.
     For instance, [merge [1;3;5] [2;4;6]] will be, in disorder, [1;2;3;4;5;6]. *)
 
 val intersection : cmp:('a -> 'a -> int) -> 'a t -> 'a t -> 'a t
-(** Intersection of two sorted sequences. Only elements that occur in both
+(** Intersection of two sorted iterators. Only elements that occur in both
     inputs appear in the output *)
 
 val sorted_merge : cmp:('a -> 'a -> int) -> 'a t -> 'a t -> 'a t
-(** Merge two sorted sequences into a sorted sequence *)
+(** Merge two sorted iterators into a sorted iterator *)
 
 val round_robin : ?n:int -> 'a t -> 'a t list
-(** Split the gen into [n] generators in a fair way. Elements with
-    [index = k mod n] with go to the k-th gen. [n] default value
+(** Split the iterator into [n] iterators in a fair way. Elements with
+    [index = k mod n] with go to the k-th iterator. [n] default value
     is 2. *)
 
 val interleave : 'a t -> 'a t -> 'a t
 (** [interleave a b] yields an element of [a], then an element of [b],
-    and so on. When a generator is exhausted, this behaves like the
-    other generator. *)
+    and so on. When a iterator is exhausted, this behaves like the
+    other iterator. *)
 
 val intersperse : 'a -> 'a t -> 'a t
-(** Put the separator element between all elements of the given gen *)
+(** Put the separator element between all elements of the given iterator *)
 
 val product : 'a t -> 'b t -> ('a * 'b) t
 (** Cartesian product, in no predictable order. Works even if some of the
@@ -253,13 +270,13 @@ val uniq : eq:('a -> 'a -> bool) -> 'a t -> 'a t
     like [fun e -> map List.hd (group e)]. *)
 
 val sort : cmp:('a -> 'a -> int) -> 'a t -> 'a t
-(** Sort according to the given comparison function. The gen must be finite. *)
+(** Sort according to the given comparison function. The iterator must be finite. *)
 
 val sort_uniq : cmp:('a -> 'a -> int) -> 'a t -> 'a t
-(** Sort and remove duplicates. The gen must be finite. *)
+(** Sort and remove duplicates. The iterator must be finite. *)
 
 val chunks : int -> 'a t -> 'a array t
-(** [chunks n e] returns a generator of arrays of length [n], composed
+(** [chunks n e] returns a iterator of arrays of length [n], composed
     of successive elements of [e]. The last array may be smaller
     than [n] *)
 
@@ -273,7 +290,7 @@ val combinations : int -> 'a t -> 'a list t
       [combinations 2 (1--3) |> to_list = [[1;2]; [1;3]; [2;3]]] *)
 
 val power_set : 'a t -> 'a list t
-(** All subsets of the gen (in no particular order). The ordering of
+(** All subsets of the iterator (in no particular order). The ordering of
     the elements within each subset is unspecified. *)
 
 (** {2 Basic conversion functions} *)
@@ -288,21 +305,22 @@ val to_rev_list : 'a t -> 'a list
 (** Tail call conversion to list, in reverse order (more efficient) *)
 
 val to_array : 'a t -> 'a array
-(** Convert the gen to an array (not very efficient) *)
+(** Convert the iterator to an array (not very efficient) *)
 
 val of_array : ?start:int -> ?len:int -> 'a array -> 'a t
 (** Iterate on (a slice of) the given array *)
 
 val of_gen : 'a gen -> 'a t
-(** Build a functional sequence from a mutable, imperative generator.
+(** Build a functional iterator from a mutable, imperative generator.
     The result is properly memoized and can be iterated on several times,
     as a normal functional value. *)
 
 val of_gen_transient : 'a gen -> 'a t
-(** Build a functional sequence from a mutable, imperative generator.
-    Note that the resulting sequence is not going to be really functional
+(** Build a functional iterator from a mutable, imperative generator.
+    Note that the resulting iterator is not going to be really functional
     because the underlying generator can be consumed only once.
-    Use {!memoize} to recover the proper semantics. *)
+    Use {!memoize} to recover the proper semantics, or use {!of_gen}
+    directly. *)
 
 val of_string : ?start:int -> ?len:int -> string -> char t
 (** Iterate on bytes of the string *)
@@ -311,7 +329,7 @@ val to_string : char t -> string
 (** Convert into a string *)
 
 val to_buffer : Buffer.t -> char t -> unit
-(** Consumes the iterator and writes to the buffer *)
+(** Traverse the iterator and writes its content to the buffer *)
 
 val lines : char t -> string t
 (** Group together chars belonging to the same line *)
@@ -339,13 +357,13 @@ end
 include module type of Infix
 
 val pp : ?sep:string -> 'a printer -> 'a t printer
-(** Pretty print the content of the generator on a formatter. *)
+(** Pretty print the content of the iterator on a formatter. *)
 
 val memoize : 'a t -> 'a t
-(** Store content of the transient generator in memory, to be able to iterate
+(** Store content of the transient iterator in memory, to be able to iterate
     on it several times later. *)
 
-(** {2 Easy interface to write Generators} *)
+(** {2 Easy interface to Produce Iterators} *)
 
 (** This interface is designed to make it easy to build complex streams of
     values in a way that resembles Python's generators (using "yield").
@@ -372,7 +390,8 @@ val memoize : 'a t -> 'a t
    *)
 module Generator : sig
   type 'a t
-  (** Type for writing generators that return a sequence of ['a] *)
+  (** Type for writing generators (of type ['a OSeq.Generator.t])
+      that can be used to construct an iterator of type ['a OSeq.t] *)
 
   val empty : 'a t
   (** Empty generator, yields no value *)
