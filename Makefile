@@ -13,18 +13,10 @@ clean:
 doc:
 	jbuilder build @doc
 
-BENCH_TARGETS=bench_persistent_read.exe bench_persistent.exe
-
 benchs:
 	jbuilder build $(addprefix bench/, $(BENCH_TARGETS))
 
-examples:
-	jbuilder build examples/test_sexpr.exe
-
-push_doc: all doc
-	scp -r sequence.docdir/* cedeela.fr:~/simon/root/software/sequence/
-
-VERSION=$(shell awk '/^version:/ {print $$2}' sequence.opam)
+VERSION=$(shell awk '/^version:/ {print $$2}' oseq.opam)
 
 update_next_tag:
 	@echo "update version to $(VERSION)..."
@@ -43,4 +35,4 @@ watch:
 		make all; \
 	done
 
-.PHONY: benchs tests examples update_next_tag push_doc push_stable watch
+.PHONY: benchs tests examples update_next_tag watch
