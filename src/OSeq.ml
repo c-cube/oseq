@@ -59,10 +59,10 @@ let (--^) i j =
   else i -- (j+1)
 
 (*$= & ~printer:pilist
-  [1;2;3;4] (1 --^ 5 |> to_list) 
-  [5;4;3;2] (5 --^ 1 |> to_list) 
-  [1]       (1 --^ 2 |> to_list) 
-  []        (0 --^ 0 |> to_list) 
+  [1;2;3;4] (1 --^ 5 |> to_list)
+  [5;4;3;2] (5 --^ 1 |> to_list)
+  [1]       (1 --^ 2 |> to_list)
+  []        (0 --^ 0 |> to_list)
 *)
 
 let rec map f l () =
