@@ -529,6 +529,7 @@ let product l1 l2 =
 
 let app fs xs = product_with (fun f x -> f x) fs xs
 
+
 module Infix = struct
   let (>>=) xs f = flat_map f xs
   let (>|=) xs f = map f xs
@@ -541,6 +542,26 @@ module Infix = struct
 end
 
 include Infix
+
+let product3 l1 l2 l3 =
+  (fun x1 x2 x3 -> x1,x2,x3)
+  |> return <*> l1 <*> l2 <*> l3
+
+let product4 l1 l2 l3 l4 =
+  (fun x1 x2 x3 x4 -> x1,x2,x3,x4)
+  |> return <*> l1 <*> l2 <*> l3 <*> l4
+
+let product5 l1 l2 l3 l4 l5 =
+  (fun x1 x2 x3 x4 x5 -> x1,x2,x3,x4,x5)
+  |> return <*> l1 <*> l2 <*> l3 <*> l4 <*> l5
+
+let product6 l1 l2 l3 l4 l5 l6 =
+  (fun x1 x2 x3 x4 x5 x6 -> x1,x2,x3,x4,x5,x6)
+  |> return <*> l1 <*> l2 <*> l3 <*> l4 <*> l5 <*> l6
+
+let product7 l1 l2 l3 l4 l5 l6 l7 =
+  (fun x1 x2 x3 x4 x5 x6 x7 -> x1,x2,x3,x4,x5,x6,x7)
+  |> return <*> l1 <*> l2 <*> l3 <*> l4 <*> l5 <*> l6 <*> l7
 
 let rec group ~eq l () = match l() with
   | Nil -> Nil

@@ -262,6 +262,23 @@ val product : 'a t -> 'b t -> ('a * 'b) t
 (** Cartesian product, in no predictable order. Works even if some of the
     arguments are infinite. *)
 
+val product3 : 'a t -> 'b t -> 'c t -> ('a * 'b * 'c) t
+(** Cartesian product of three iterators, see product. *)
+
+val product4 : 'a t -> 'b t -> 'c t -> 'd t -> ('a * 'b * 'c * 'd) t
+(** Cartesian product of four iterators, see product. *)
+
+val product5 : 'a t -> 'b t -> 'c t -> 'd t -> 'e t -> ('a * 'b * 'c * 'd * 'e) t
+(** Cartesian product of five iterators, see product. *)
+
+val product6 : 'a t -> 'b t -> 'c t -> 'd t -> 'e t -> 'f t
+   ->  ('a * 'b * 'c * 'd * 'e * 'f) t
+(** Cartesian product of six iterators, see product. *)
+
+val product7 : 'a t -> 'b t -> 'c t -> 'd t -> 'e t -> 'f t -> 'g t
+   ->  ('a * 'b * 'c * 'd * 'e * 'f * 'g) t
+(** Cartesian product of seven iterators, see product. *)
+
 val group : eq:('a -> 'a -> bool) -> 'a t -> 'a t t
 (** Group equal consecutive elements together. *)
 
