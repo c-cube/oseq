@@ -563,6 +563,34 @@ let product7 l1 l2 l3 l4 l5 l6 l7 =
   (fun x1 x2 x3 x4 x5 x6 x7 -> x1,x2,x3,x4,x5,x6,x7)
   |> return <*> l1 <*> l2 <*> l3 <*> l4 <*> l5 <*> l6 <*> l7
 
+let rec cartesian_product l () =
+  match l() with
+  | Nil -> Cons ([], empty)
+  | Cons (l1, tail) ->
+    let tail = cartesian_product tail in
+    product_with (fun x tl -> x::tl) l1 tail ()
+
+(*$inject
+  let ofll l = l |> of_list |> map of_list
+  let cmp_lii_unord l1 l2 : bool =
+    List.sort CCOrd.compare l1 = List.sort CCOrd.compare l2
+*)
+
+(*$= & ~printer:Q.Print.(list (list int)) ~cmp:cmp_lii_unord
+  [[1;3;4];[1;3;5];[1;3;6];[2;3;4];[2;3;5];[2;3;6]] \
+    (to_list @@ cartesian_product @@ ofll [[1;2];[3];[4;5;6]])
+  [] (to_list @@ cartesian_product @@ ofll [[1;2];[];[4;5;6]])
+  [[]] (to_list @@ cartesian_product empty)
+  [[1;3;4;5;6];[2;3;4;5;6]] \
+    (to_list @@ cartesian_product @@ ofll [[1;2];[3];[4];[5];[6]])
+*)
+
+
+(* cartesian product of lists of lists *)
+let map_product_l f l =
+  let l = map f l in
+  cartesian_product l
+
 let rec group ~eq l () = match l() with
   | Nil -> Nil
   | Cons (x, l') ->
