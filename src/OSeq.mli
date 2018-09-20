@@ -233,7 +233,7 @@ val zip : 'a t -> 'b t -> ('a * 'b) t
 val merge : 'a t t -> 'a t
 (** Pick elements fairly in each sub-iterator. The merge of gens
     [e1, e2, ... ] picks elements in [e1], [e2],
-    in [e3], [e1], [e2] .... Once a iterator is empty, it is skipped;
+    in [e3], [e1], [e2] .... Once an iterator is empty, it is skipped;
     when they are all empty, and none remains in the input,
     their merge is also empty.
     For instance, [merge [1;3;5] [2;4;6]] will be, in disorder, [1;2;3;4;5;6]. *)

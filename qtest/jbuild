@@ -17,6 +17,7 @@
   ((name run_qtest)
    (modes (native))
    (modules (run_qtest))
+   (flags (:standard -w -5))
    (libraries (oseq gen qcheck containers))
   ))
 
