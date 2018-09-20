@@ -41,7 +41,7 @@ let run_qtest target =
     |> String.concat " "
   in
   let cmd =
-    Printf.sprintf "qtest extract --preamble 'open OSeq;;' -o %S %s 2>/dev/null"
+    Printf.sprintf "qtest extract --preamble 'open OSeq;;' -o %S %s 2> qtest-extract.log"
       target files
   in
   exit (Sys.command cmd)
