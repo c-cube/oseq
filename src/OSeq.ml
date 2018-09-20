@@ -687,36 +687,41 @@ module F_queue = struct
       x, q'
 end
 
+type 'a merge_op =
+  | Merge_from of 'a t
+  | Merge_start of 'a t t
+
 let merge gens : _ t =
   (* recursive function to get next element
      @param q the already produced generators
      @param tl the generators still untouched *)
-  let rec next (q:'a t F_queue.t) (tl:'a t t) () =
-    match tl() with
-    | Nil ->
-      (* all generators are in [q] now *)
-      if F_queue.is_empty q then Nil
-      else (
-        let g, q' = F_queue.pop_exn q in
-        match g() with
-        | Nil -> next q' empty ()
-        | Cons (x, g') ->
-          Cons (x, next (F_queue.push g' q') empty)
-      )
-    | Cons (g, tl') ->
-      yield_from g q tl'
-
-  and yield_from g q tl =
+  let rec next (q:'a merge_op F_queue.t) () =
+    if F_queue.is_empty q then Nil
+    else (
+      match F_queue.pop_exn q  with
+      | Merge_from g, q' -> yield_from g q'
+      | Merge_start gens, q' ->
+        begin match gens() with
+          | Nil -> next q' ()
+          | Cons (g, gens') ->
+            let q' = F_queue.push (Merge_start gens') q' in
+            yield_from g q'
+        end
+    )
+  and yield_from g q =
     match g() with
-    | Nil -> next q tl ()
+    | Nil -> next q ()
     | Cons (x, g') ->
-      Cons (x, next (F_queue.push g' q) tl)
+      Cons (x, next (F_queue.push (Merge_from g') q))
   in
-  next F_queue.empty gens
+  let q = F_queue.push (Merge_start gens) F_queue.empty in
+  next q
 
-(*$T
-  merge (of_list [of_list [1;3;5]; of_list [2;4;6]; of_list [7;8;9]]) \
-    |> to_list |> List.sort Pervasives.compare = [1;2;3;4;5;6;7;8;9]
+(*$= & ~printer:Q.Print.(list int)
+  [1;2;3;4;5;6;7;8;9] \
+  (merge (of_list [of_list [1;3;5]; of_list [2;4;6]; of_list [7;8;9]]) \
+    |> to_list |> List.sort Pervasives.compare)
+  [1;2;3;4;5;6] (merge (of_list [of_list [1;3;6]; of_list [2;5]; of_list [4]]) |> to_list)
 *)
 
 (*$T
