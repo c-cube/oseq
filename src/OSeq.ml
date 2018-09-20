@@ -719,6 +719,12 @@ let merge gens : _ t =
     |> to_list |> List.sort Pervasives.compare = [1;2;3;4;5;6;7;8;9]
 *)
 
+(*$T
+  mem ~eq:(=) (3,5) @@ \
+  take 20_000 @@ merge @@ \
+  map (fun i -> iterate 0 succ |> map (fun j -> (i, j))) @@ iterate 0 succ
+*)
+
 (*$R
   let e = of_list [1--3; 4--6; 7--9] in
   let e' = merge e in
