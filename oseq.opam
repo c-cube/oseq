@@ -23,4 +23,5 @@ homepage: "https://github.com/c-cube/oseq/"
 doc: "https://c-cube.github.io/oseq/"
 bug-reports: "https://github.com/c-cube/oseq/issues"
 dev-repo: "git+https://github.com/c-cube/oseq.git"
-
+synopsis: "Simple list of suspensions, as a composable lazy iterator that behaves like a value"
+description: "Extends the new standard library's `Seq` module with many useful combinators."
