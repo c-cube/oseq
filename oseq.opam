@@ -11,11 +11,11 @@ build: [
 ]
 depends: [
   "dune" {build}
-  "qcheck" {test}
-  "qtest" {test}
-  "gen" {test}
-  "containers" {test}
-  "odoc" {doc}
+  "qcheck" {with-test}
+  "qtest" {with-test}
+  "gen" {with-test}
+  "containers" {with-test}
+  "odoc" {with-doc}
   "seq"
 ]
 tags: [ "sequence" "iterator" "seq" "pure" "list" ]
