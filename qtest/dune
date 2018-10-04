@@ -1,0 +1,29 @@
+
+(executable
+  (name make)
+  (modules make)
+  )
+
+(rule
+  (targets run_qtest.ml)
+  (deps make.bc (source_tree ../src))
+  (mode fallback)
+  ;(libraries (qtest qcheck))
+  (action
+    (run ./make.bc -target %{targets}))
+  )
+
+(executable
+  (name run_qtest)
+  (modes native)
+  (modules run_qtest)
+  (flags :standard -w -5-6-33 -warn-error -a+8)
+  (libraries oseq gen qcheck containers)
+  )
+
+(alias
+ (name    runtest)
+ (deps    run_qtest.exe)
+ (action  (run %{deps}))
+ )
+

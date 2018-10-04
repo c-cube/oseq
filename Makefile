@@ -2,19 +2,19 @@
 all: build test
 
 build:
-	jbuilder build @install
+	@dune build @install
 
 test:
-	jbuilder runtest --no-buffer --force
+	@dune runtest --no-buffer --force
 
 clean:
-	jbuilder clean
+	@dune clean
 
 doc:
-	jbuilder build @doc
+	@dune build @doc
 
 benchs:
-	jbuilder build $(addprefix bench/, $(BENCH_TARGETS))
+	@dune build $(addprefix bench/, $(BENCH_TARGETS))
 
 VERSION=$(shell awk '/^version:/ {print $$2}' oseq.opam)
 
