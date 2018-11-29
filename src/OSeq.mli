@@ -264,25 +264,25 @@ val product : 'a t -> 'b t -> ('a * 'b) t
 
 val product3 : 'a t -> 'b t -> 'c t -> ('a * 'b * 'c) t
 (** Cartesian product of three iterators, see product.
-    @since NEXT_RELEASE *)
+    @since 0.2 *)
 
 val product4 : 'a t -> 'b t -> 'c t -> 'd t -> ('a * 'b * 'c * 'd) t
 (** Cartesian product of four iterators, see product.
-    @since NEXT_RELEASE *)
+    @since 0.2 *)
 
 val product5 : 'a t -> 'b t -> 'c t -> 'd t -> 'e t -> ('a * 'b * 'c * 'd * 'e) t
 (** Cartesian product of five iterators, see product.
-    @since NEXT_RELEASE *)
+    @since 0.2 *)
 
 val product6 : 'a t -> 'b t -> 'c t -> 'd t -> 'e t -> 'f t
    ->  ('a * 'b * 'c * 'd * 'e * 'f) t
 (** Cartesian product of six iterators, see product.
-    @since NEXT_RELEASE *)
+    @since 0.2 *)
 
 val product7 : 'a t -> 'b t -> 'c t -> 'd t -> 'e t -> 'f t -> 'g t
    ->  ('a * 'b * 'c * 'd * 'e * 'f * 'g) t
 (** Cartesian product of seven iterators, see product.
-    @since NEXT_RELEASE *)
+    @since 0.2 *)
 
 val cartesian_product : 'a t t -> 'a list t
 (** Produce the cartesian product of this list of lists,
@@ -297,14 +297,14 @@ val cartesian_product : 'a t t -> 'a list t
       [[1;3;4;5;6];[2;3;4;5;6]];;
     ]}
     invariant: [cartesian_product l = map_product_l id l].
-    @since NEXT_RELEASE *)
+    @since 0.2 *)
 
 val map_product_l : ('a -> 'b t) -> 'a t -> 'b list t
 (** [map_product_l f l] maps each element of [l] to a list of
     objects of type ['b] using [f].
     We obtain [[l1;l2;...;ln]] where [length l=n] and [li : 'b list].
     Then, it returns all the ways of picking exactly one element per [li].
-    @since NEXT_RELEASE *)
+    @since 0.2 *)
 
 val group : eq:('a -> 'a -> bool) -> 'a t -> 'a t t
 (** Group equal consecutive elements together. *)
