@@ -399,6 +399,19 @@ let rec find p e = match e () with
    find (fun x -> x>5) (1--4) = None
 *)
 
+let rec find_map f e = match e () with
+  | Nil -> None
+  | Cons (x, tl) ->
+    match f x with
+    | None -> find_map f tl
+    | Some _ as res -> res
+
+(*$T
+   find_map (fun x -> if x >= 5 then Some (- x) else None) (1--10) = Some (-5)
+   find_map (fun x -> if x > 5 then Some (- x) else None) (1--4) = None
+   find_map (fun _ -> None) (1--10) = None
+*)
+
 let sum e = fold (+) 0 e
 
 (*$T
