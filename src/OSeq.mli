@@ -1,4 +1,3 @@
-
 (** {1 OSeq: Functional Iterators} *)
 
 type 'a t = unit -> 'a node
@@ -152,15 +151,13 @@ val filter : ('a -> bool) -> 'a t -> 'a t
 (** Filter out elements that do not satisfy the predicate.  *)
 
 val take_while : ('a -> bool) -> 'a t -> 'a t
-(** Take elements while they satisfy the predicate. The initial iterator
-    itself is not to be used anymore after this. *)
+(** Take elements while they satisfy the predicate. *)
 
 val fold_while : ('a -> 'b -> 'a * [`Stop | `Continue]) -> 'a -> 'b t -> 'a
 (** Fold elements until (['a, `Stop]) is indicated by the accumulator. *)
 
 val drop_while : ('a -> bool) -> 'a t -> 'a t
-(** Drop elements while they satisfy the predicate. The initial iterator
-    itself should not be used anymore, only the result of [drop_while]. *)
+(** Drop elements while they satisfy the predicate.  *)
 
 val filter_map : ('a -> 'b option) -> 'a t -> 'b t
 (** Maps some elements to 'b, drop the other ones *)
