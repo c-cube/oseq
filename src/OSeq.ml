@@ -994,6 +994,12 @@ let to_string s =
 (*$Q
    Q.(pair (list string) string) (fun (s, sep) -> String.equal ( String.concat sep s) (concat_string ~sep (of_list s)))
 *)
+(*$T
+  concat_string ~sep:"" (of_list [ "a"; "b"; "c" ]) = "abc"
+  concat_string ~sep:"random" (return "a") = "a"
+  concat_string ~sep:"," (of_list [ "a"; "b"; "c" ]) = "a,b,c"
+  concat_string ~sep:"random" empty = ""
+*)
 let concat_string ~sep s =
   match s() with
   | Nil -> ""
