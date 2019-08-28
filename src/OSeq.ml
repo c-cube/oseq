@@ -161,6 +161,9 @@ let rec fold f acc l = match l() with
 
 let fold_left = fold
 
+(*$T foldi
+  (foldi (fun i acc x ->(i,x)::acc) [] (of_list ["a"; "b"])) = [1,"b";0,"a"]
+  *)
 let foldi f acc l =
   let rec foldi f i acc l =
     match l() with
@@ -1003,9 +1006,9 @@ let to_string s =
    Q.(pair (list string) string) (fun (s, sep) -> String.equal ( String.concat sep s) (concat_string ~sep (of_list s)))
 *)
 (*$T
-  concat_string ~sep:"" (of_list [ "a"; "b"; "c" ]) = "abc"
+  concat_string ~sep:"" (of_list [ "a"; "b"; "coucou" ]) = "abcoucou"
   concat_string ~sep:"random" (return "a") = "a"
-  concat_string ~sep:"," (of_list [ "a"; "b"; "c" ]) = "a,b,c"
+  concat_string ~sep:"," (of_list [ "a"; "b"; "c"; ""; ""; "d" ]) = "a,b,c,,,d"
   concat_string ~sep:"random" empty = ""
 *)
 let concat_string ~sep s =
@@ -1014,19 +1017,21 @@ let concat_string ~sep s =
   | Cons (x, tl) ->
     let sep_len = String.length sep in
     let len = fold (fun len s -> String.length s + sep_len + len) (String.length x) tl in
-    let bytes = Bytes.make len '\000' in (* need first elem to create [a] *)
+    let bytes = Bytes.make len '\000' in
     let _:int =
       fold
         (fun off s ->
           let slen = String.length s in
+          assert (off+slen <= len);
           Bytes.unsafe_blit (Bytes.unsafe_of_string s) 0 bytes off slen;
           if off + slen < len then (
+            (* not the last chunk *)
             Bytes.unsafe_blit (Bytes.unsafe_of_string sep) 0 bytes (off + slen) sep_len;
             off + slen + sep_len
           ) else (
             off + slen
-          )
-        ) 0 s
+          ))
+        0 s
     in
     Bytes.unsafe_to_string bytes
 
