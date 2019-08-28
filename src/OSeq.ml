@@ -991,6 +991,31 @@ let to_string s =
   to_buffer buf s;
   Buffer.contents buf
 
+(*$Q
+   Q.(pair (list string) string) (fun (s, sep) -> String.equal ( String.concat sep s) (concat_string ~sep (of_list s)))
+*)
+let concat_string ~sep s =
+  match s() with
+  | Nil -> ""
+  | Cons (x, tl) ->
+    let sep_len = String.length sep in
+    let len = fold (fun len s -> String.length s + sep_len + len) (String.length x) tl in
+    let bytes = Bytes.make len '\000' in (* need first elem to create [a] *)
+    let _:int =
+      fold
+        (fun off s ->
+          let slen = String.length s in
+          Bytes.unsafe_blit (Bytes.unsafe_of_string s) 0 bytes off slen;
+          if off + slen < len then (
+            Bytes.unsafe_blit (Bytes.unsafe_of_string sep) 0 bytes (off + slen) sep_len;
+            off + slen + sep_len
+          ) else (
+            off + slen
+          )
+        ) 0 s
+    in
+    Bytes.unsafe_to_string bytes
+
 let rec to_seq res k = match res () with
   | Nil -> ()
   | Cons (s, f) -> k s; to_seq f k
