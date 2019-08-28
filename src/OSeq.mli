@@ -352,7 +352,7 @@ val to_rev_list : 'a t -> 'a list
 
 val to_array : 'a t -> 'a array
 (** Convert the iterator to an array (not very efficient).
-    The iterator must memoized. *)
+    The iterator must be memoized, as it's traversed twice. *)
 
 val of_array : ?start:int -> ?len:int -> 'a array -> 'a t
 (** Iterate on (a slice of) the given array *)
