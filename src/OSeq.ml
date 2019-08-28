@@ -1003,7 +1003,7 @@ let to_string s =
   Buffer.contents buf
 
 (*$Q
-   Q.(pair (list string) string) (fun (s, sep) -> String.equal ( String.concat sep s) (concat_string ~sep (of_list s)))
+   Q.(pair (list string) string) (fun (s, sep) -> String.concat sep s = concat_string ~sep (of_list s))
 *)
 (*$T
   concat_string ~sep:"" (of_list [ "a"; "b"; "coucou" ]) = "abcoucou"
