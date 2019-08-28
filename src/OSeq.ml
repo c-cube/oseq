@@ -161,6 +161,14 @@ let rec fold f acc l = match l() with
 
 let fold_left = fold
 
+let foldi f acc l =
+  let rec foldi f i acc l =
+    match l() with
+    | Nil -> acc
+    | Cons (x,tl) -> foldi f (succ i) (f i acc x) tl
+  in
+  foldi f 0 acc  l
+
 let reduce f g =
   match g() with
   | Nil -> invalid_arg "reduce"

@@ -71,6 +71,9 @@ val fold : ('b -> 'a -> 'b) -> 'b -> 'a t -> 'b
 val fold_left : ('b -> 'a -> 'b) -> 'b -> 'a t -> 'b
 (** Alias to {!fold} *)
 
+val foldi : (int -> 'b -> 'a -> 'b) -> 'b -> 'a t -> 'b
+(** Fold on the iterator, tail-recursively. *)
+
 val reduce : ('a -> 'a -> 'a) -> 'a t -> 'a
 (** Fold on non-empty iterators.
     @raise Invalid_argument on an empty iterator *)
