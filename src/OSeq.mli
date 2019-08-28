@@ -379,7 +379,8 @@ val to_buffer : Buffer.t -> char t -> unit
 
 val concat_string : sep:string -> string t -> string
 (** [concat_string ~sep s] concatenates all strings of [i], separated with [sep].
-    The iterator must be memoized *)
+    The iterator must be memoized.
+    @since 0.3 *)
 
 val lines : char t -> string t
 (** Group together chars belonging to the same line *)
