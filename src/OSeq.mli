@@ -200,7 +200,7 @@ val find : ('a -> bool) -> 'a t -> 'a option
 val find_map : ('a -> 'b option) -> 'a t -> 'b option
 (** [find_map f e] returns the result of [f] on the first element of [e]
     for which it returns [Some _], or [None] otherwise.
-    @since NEXT_RELEASE *)
+    @since 0.3 *)
 
 val sum : int t -> int
 (** Sum of all elements *)
