@@ -9,8 +9,9 @@ env:
   - DISTRO="ubuntu-16.04"
   matrix:
   - PACKAGE="oseq" OCAML_VERSION="4.03"
-  - PACKAGE="oseq" OCAML_VERSION="4.04"
-  - PACKAGE="oseq" OCAML_VERSION="4.05"
+    #- PACKAGE="oseq" OCAML_VERSION="4.04"
+    #- PACKAGE="oseq" OCAML_VERSION="4.05"
   - PACKAGE="oseq" OCAML_VERSION="4.06"
-  - PACKAGE="oseq" OCAML_VERSION="4.07"
+    #- PACKAGE="oseq" OCAML_VERSION="4.07"
     #- PACKAGE="oseq" OCAML_VERSION="4.02" DEPOPTS="gen qtest qcheck containers odoc"
+  - PACKAGE="oseq" OCAML_VERSION="4.10"
