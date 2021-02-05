@@ -1,6 +1,6 @@
 # OSeq
 
-[![build status](https://travis-ci.org/c-cube/oseq.svg?branch=master)](https://travis-ci.org/c-cube/oseq)
+[![build status](https://github.com/c-cube/oseq/workflows/build/badge.svg)](https://github.com/c-cube/oseq/actions/)
 
 Simple list of suspensions, as a composable lazy iterator that behaves like a value.
 
