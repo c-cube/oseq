@@ -43,6 +43,14 @@ let return x () = Cons (x, empty)
 
 let cons a b () = Cons (a,b)
 
+let head_exn g = match g() with
+  | Cons (x, _) -> x
+  | Nil -> invalid_arg "OSeq.head_exn"
+
+let tail_exn g : _ t = match g() with
+  | Cons (_, l) -> l
+  | Nil -> invalid_arg "OSeq.tail_exn"
+
 let rec (--) i j () =
   if i=j then Cons (i, empty)
   else if i<j then Cons (i, i+1 -- j)

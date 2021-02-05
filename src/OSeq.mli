@@ -23,6 +23,16 @@ val return : 'a -> 'a t
 val cons : 'a -> 'a t -> 'a t
 
 val repeat : 'a -> 'a t
+
+val head_exn : 'a t -> 'a
+(** Returns first element, or fails.
+    @raise Invalid_argument on an empty sequence
+    @since NEXT_RELEASE *)
+
+val tail_exn : 'a t -> 'a t
+(** Returns list without its first element, or fails.
+    @raise Invalid_argument on an empty sequence
+    @since NEXT_RELEASE *)
 (** Repeat same element endlessly *)
 
 val cycle : 'a t -> 'a t
