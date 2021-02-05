@@ -1,9 +1,9 @@
 
 (** {1 OSeq: Functional Iterators} *)
 
-
 (*$inject
   [@@@ocaml.warning "-33-5"]
+  CCShims_
 
   let plist f l = "["^String.concat ";" (List.map f l) ^"]"
   let ppair f1 f2 (x,y) = Printf.sprintf "(%s,%s)" (f1 x)(f2 y)
@@ -299,7 +299,7 @@ let equal ~eq gen1 gen2 =
 
 (*$Q
   (Q.pair (Q.list Q.small_int)(Q.list Q.small_int)) (fun (l1,l2) -> \
-    equal ~eq:Pervasives.(=) (of_list l1)(of_list l2) = (l1 = l2))
+    equal ~eq:Stdlib.(=) (of_list l1)(of_list l2) = (l1 = l2))
 *)
 
 (* [partition p l] returns the elements that satisfy [p],
@@ -397,7 +397,7 @@ let compare ~cmp gen1 gen2 : int =
 (*$Q
   (Q.pair (Q.list Q.small_int)(Q.list Q.small_int)) (fun (l1,l2) -> \
     let sign x = if x < 0 then -1 else if x=0 then 0 else 1 in \
-    sign (compare ~cmp:Pervasives.compare (of_list l1)(of_list l2)) = sign (Pervasives.compare l1 l2))
+    sign (compare ~cmp:Stdlib.compare (of_list l1)(of_list l2)) = sign (Stdlib.compare l1 l2))
 *)
 
 let rec find p e = match e () with
@@ -544,7 +544,7 @@ let product_with f l1 l2 =
 
 (*$Q
   Q.(pair (small_list int)(small_list int)) (fun (l1,l2) -> \
-    let lsort=List.sort Pervasives.compare in \
+    let lsort=List.sort Stdlib.compare in \
     lsort (List.flatten@@List.map (fun x ->List.map (fun y->x,y) l2)l1) = \
     lsort (product (of_list l1)(of_list l2) |> to_list))
 *)
@@ -625,6 +625,11 @@ let rec group ~eq l () = match l() with
   of_list [1;1;1;2;2;3;3;1] |> group ~eq:(=) |> map to_list |> to_list = \
     [[1;1;1]; [2;2]; [3;3]; [1]]
 *)
+
+(*$Q
+    Q.(small_list int) (fun l -> \
+      (of_list l |> group ~eq:(=) |> flatten |> to_list) = l)
+    *)
 
 let rec uniq_rec_ eq prev l () = match prev, l() with
   | _, Nil -> Nil
@@ -745,7 +750,7 @@ let merge gens : _ t =
 (*$= & ~printer:Q.Print.(list int)
   [1;2;3;4;5;6;7;8;9] \
   (merge (of_list [of_list [1;3;5]; of_list [2;4;6]; of_list [7;8;9]]) \
-    |> to_list |> List.sort Pervasives.compare)
+    |> to_list |> List.sort Stdlib.compare)
   [1;2;3;4;5;6] (merge (of_list [of_list [1;3;6]; of_list [2;5]; of_list [4]]) |> to_list)
 *)
 
@@ -759,7 +764,7 @@ let merge gens : _ t =
   let e = of_list [1--3; 4--6; 7--9] in
   let e' = merge e in
   OUnit.assert_equal [1;2;3;4;5;6;7;8;9]
-    (to_list e' |> List.sort Pervasives.compare);
+    (to_list e' |> List.sort Stdlib.compare);
 *)
 
 let intersection ~cmp gen1 gen2 : _ t =
@@ -778,7 +783,7 @@ let intersection ~cmp gen1 gen2 : _ t =
   fun () -> next (gen1()) (gen2()) ()
 
 (*$= & ~printer:pilist
-  [1;2;4;8] (intersection ~cmp:Pervasives.compare \
+  [1;2;4;8] (intersection ~cmp:Stdlib.compare \
     (of_list [1;1;2;3;4;8]) (of_list [1;2;4;5;6;7;8;9]) |> to_list)
 *)
 
@@ -813,7 +818,7 @@ let sorted_merge ~cmp gen1 gen2 : _ t =
   fun () -> next (gen1()) (gen2()) ()
 
 (*$T
-  sorted_merge ~cmp:Pervasives.compare \
+  sorted_merge ~cmp:Stdlib.compare \
   (of_list [1;2;2;3;5;10;100]) (of_list [2;4;5;6;11]) \
     |> to_list = [1;2;2;2;3;4;5;5;6;10;11;100]
 *)
@@ -880,7 +885,7 @@ let permutations l =
 
 (*$= permutations & ~printer:pilistlist
   [[1;2;3]; [1;3;2]; [2;1;3]; [2;3;1]; [3;1;2]; [3;2;1]] \
-  (permutations CCList.(1--3) |> to_list |> List.sort Pervasives.compare)
+  (permutations CCList.(1--3) |> to_list |> List.sort Stdlib.compare)
   [[]] (permutations [] |> to_list)
   [[1]] (permutations [1] |> to_list)
 *)
@@ -902,8 +907,8 @@ let combinations n g =
 
 (*$= & ~printer:pilistlist
   [[1;2]; [1;3]; [1;4]; [2;3]; [2;4]; [3;4]] \
-    (combinations 2 (1--4) |> map (List.sort Pervasives.compare) \
-    |> to_list |> List.sort Pervasives.compare)
+    (combinations 2 (1--4) |> map (List.sort Stdlib.compare) \
+    |> to_list |> List.sort Stdlib.compare)
   [[]] (combinations 0 (1--4) |> to_list)
   [[1]] (combinations 1 (return 1) |> to_list)
 *)
@@ -923,11 +928,11 @@ let power_set g : _ t =
 
 (*$= & ~printer:pilistlist
   [[]; [1]; [1;2]; [1;2;3]; [1;3]; [2]; [2;3]; [3]] \
-  (power_set (1--3) |> map (List.sort Pervasives.compare) \
-    |> to_list |> List.sort Pervasives.compare)
+  (power_set (1--3) |> map (List.sort Stdlib.compare) \
+    |> to_list |> List.sort Stdlib.compare)
   [[]] (power_set empty |> to_list)
-  [[]; [1]] (power_set (return 1) |> map (List.sort Pervasives.compare) \
-    |> to_list |> List.sort Pervasives.compare)
+  [[]; [1]] (power_set (return 1) |> map (List.sort Stdlib.compare) \
+    |> to_list |> List.sort Stdlib.compare)
 *)
 
 
@@ -1202,7 +1207,7 @@ end
       in
       run (aux seq)
     in
-    equal Pervasives.(=) seq seq2)
+    equal Stdlib.(=) seq seq2)
 *)
 
 module IO = struct

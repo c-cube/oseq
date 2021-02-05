@@ -10,7 +10,7 @@ build: [
   ["dune" "runtest" "-p" name] {with-test}
 ]
 depends: [
-  "dune" {build}
+  "dune" { >= "1.0" }
   "qcheck" {with-test}
   "qtest" {with-test}
   "gen" {with-test}

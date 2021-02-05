@@ -2,9 +2,7 @@
   (targets flambda.flags)
   (deps (file mkflags.ml))
   (mode fallback)
-  (action
-    (run ocaml ./mkflags.ml))
-  )
+  (action (run ocaml ./mkflags.ml)))
 
 (library
   (name oseq)
@@ -14,6 +12,5 @@
   (flags :standard -w +a-4-42-44-48-50-58-32-60@8 -safe-string -nolabels -warn-error -a+8)
   (ocamlopt_flags :standard (:include flambda.flags))
   (inline_tests (backend qtest.lib) (libraries containers))
-  (libraries seq)
-  )
+  (libraries seq))
 
