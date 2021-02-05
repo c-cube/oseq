@@ -19,6 +19,7 @@ jobs:
       with:
         path: _opam
         key: opam-${{matrix.operating-system}}-${{matrix.ocaml-version}}
+    - run: opam pin dune 2.7.1 # 2.8 breaks inline tests with warn-error
     - run: opam pin -n .
       if: steps.cache-opam.outputs.cache-hit != 'true'
     - run: opam depext -yt iter
