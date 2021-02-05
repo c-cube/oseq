@@ -3,7 +3,7 @@
 
 (*$inject
   [@@@ocaml.warning "-33-5"]
-  CCShims_
+  open CCShims_
 
   let plist f l = "["^String.concat ";" (List.map f l) ^"]"
   let ppair f1 f2 (x,y) = Printf.sprintf "(%s,%s)" (f1 x)(f2 y)
