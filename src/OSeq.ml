@@ -1238,8 +1238,11 @@ let group_count key seq =
 
 (*$R
   [1;2;3;3;2;2;3;4]
-    |> of_list |> group_by (module IntK) ~project:(fun x->x) |> map snd |> sort ?cmp:None |> to_list
-    |> OUnit.assert_equal [[1];[2;2;2];[3;3;3];[4]]
+   |> of_list
+   |> group_by (module IntK) ~project:(fun x->x)
+   |> map snd |> sort ~cmp:CCOrd.compare
+   |> to_list
+   |> OUnit.assert_equal [[1];[2;2;2];[3;3;3];[4]]
 *)
 
 let join_by (type k) (module Key : HashedType with type t = k)
@@ -1257,9 +1260,9 @@ let join_by (type k) (module Key : HashedType with type t = k)
   let q = Queue.create() in
 
   let rec gen () =
-    match Queue.take_opt q with
-    | Some x -> Some x
-    | None ->
+    match Queue.take q with
+    | x -> Some x
+    | exception Queue.Empty ->
       if !next_left then (
         next_left := false;
         match !seq1() with
