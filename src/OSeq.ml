@@ -933,7 +933,6 @@ let power_set g : _ t =
     |> to_list |> List.sort Stdlib.compare)
 *)
 
-
 (** {2 Conversions} *)
 
 let rec to_rev_list_rec_ acc l = match l() with
@@ -1207,6 +1206,128 @@ end
     in
     equal ~eq:Stdlib.(=) seq seq2)
 *)
+
+module type HashedType = Hashtbl.HashedType
+
+let group_by_fold (type k) (module K : HashedType with type t = k) ~project ~fold ~init seq =
+  let module Tbl = OSeq_shims_.Tbl_make(K) in
+  (* compute group table *)
+  let tbl = lazy (
+    let tbl = Tbl.create 32 in
+    iter
+      (fun x ->
+         let key = project x in
+         let acc = try Tbl.find tbl key with Not_found -> init in
+         let acc = fold acc x in
+         Tbl.replace tbl key acc)
+      seq;
+    Tbl.to_seq tbl
+  ) in
+  (* delay start *)
+  (fun () -> (Lazy.force tbl) ())
+
+let group_by key ~project seq =
+  group_by_fold key ~project ~fold:(fun l x -> x::l) ~init:[] seq
+
+let group_count key seq =
+  group_by_fold key ~project:(fun x->x) ~fold:(fun n _x -> n+1) ~init:0 seq
+
+(*$inject
+  module IntK = struct type t=int let equal=(=) let hash x=x land max_int end
+  *)
+
+(*$R
+  [1;2;3;3;2;2;3;4]
+    |> of_list |> group_by (module IntK) ~project:(fun x->x) |> map snd |> sort ?cmp:None |> to_list
+    |> OUnit.assert_equal [[1];[2;2;2];[3;3;3];[4]]
+*)
+
+let join_by (type k) (module Key : HashedType with type t = k)
+    ~project_left ~project_right ~merge seq1 seq2 : _ t =
+  let module Tbl = OSeq_shims_.Tbl_make(Key) in
+  let tbl_left = Tbl.create 16 in
+  let tbl_right = Tbl.create 16 in
+
+  let seq1 = ref seq1 in
+  let seq2 = ref seq2 in
+
+  let get_l tbl k = try Tbl.find tbl k with Not_found -> [] in
+
+  let next_left = ref true in
+  let q = Queue.create() in
+
+  let rec gen () =
+    match Queue.take_opt q with
+    | Some x -> Some x
+    | None ->
+      if !next_left then (
+        next_left := false;
+        match !seq1() with
+        | Nil -> ()
+        | Cons (x, tl1) ->
+          seq1 := tl1;
+          let key = project_left x in
+          Tbl.replace tbl_left key (x :: get_l tbl_left key);
+          (* join [x] with the RHS items that have the same key *)
+          let ys = get_l tbl_right key in
+          List.iter
+            (fun y -> match merge key x y with
+                 | None -> ()
+                 | Some r -> Queue.push r q)
+            ys;
+      ) else (
+        next_left := true;
+        match !seq2() with
+        | Nil -> ()
+        | Cons (y,tl2) ->
+          seq2 := tl2;
+          let key = project_right y in
+          Tbl.replace tbl_right key (y :: get_l tbl_right key);
+          (* join [y] with the LHS items that have the same key *)
+          let xs = get_l tbl_left key in
+          List.iter
+            (fun x -> match merge key x y with
+                 | None -> ()
+                 | Some r -> Queue.push r q)
+            xs;
+      );
+      gen()
+  in
+  memoize (of_gen_transient gen)
+
+let join_by_fold (type k) (module Key : HashedType with type t = k)
+    ~project_left ~project_right ~init ~merge seq1 seq2 : _ t =
+  let module Tbl = OSeq_shims_.Tbl_make(Key) in
+
+  let tbl_left = Tbl.create 16 in
+  let get_l tbl k = try Tbl.find tbl k with Not_found -> [] in
+
+  (* index all of [seq1] by key *)
+  iter
+    (fun x ->
+       let key = project_left x in
+       Tbl.replace tbl_left key (x :: get_l tbl_left key))
+    seq1;
+
+  let tbl = Tbl.create 16 in
+
+  (* do product by iterating on [seq2] *)
+  iter
+    (fun y ->
+       let key = project_right y in
+       let xs = get_l tbl_left key in
+       match xs with
+       | [] -> ()
+       | _ ->
+         let acc = try Tbl.find tbl key with Not_found -> init in
+         let acc =
+           List.fold_left
+             (fun acc x -> merge key x y acc) acc xs
+         in
+         Tbl.replace tbl key acc)
+    seq2;
+
+  Tbl.to_seq tbl |> map snd
 
 module IO = struct
   let with_file_in ?(mode=0o644) ?(flags=[]) filename f =

@@ -366,6 +366,90 @@ val power_set : 'a t -> 'a list t
 (** All subsets of the iterator (in no particular order). The ordering of
     the elements within each subset is unspecified. *)
 
+(** {2 Relational combinators} *)
+
+(** A type that can be compared and hashed.
+    invariant: for any [x] and [y], if [equal x y] then [hash x=hash y] must hold.
+
+    @since NEXT_RELEASE *)
+module type HashedType = Hashtbl.HashedType
+
+val group_by :
+  (module HashedType with type t = 'key) ->
+  project:('a -> 'key) ->
+  'a t -> ('key * 'a list) t
+(** Group together elements that project onto the same key,
+    ignoring their order of appearance. The order of each resulting list
+    is unspecified.
+
+    This function needs to consume the whole input before it can emit anything.
+
+    @since NEXT_RELEASE *)
+
+val group_by_fold :
+  (module HashedType with type t = 'key) ->
+  project:('a -> 'key) ->
+  fold:('b -> 'a -> 'b) ->
+  init:'b ->
+  'a t ->
+  ('key * 'b) t
+(** Group together elements that project onto the same key,
+    folding them into some aggregate of type ['b] as they are met.
+    This is the most general version of the "group_by" functions.
+
+    This function needs to consume the whole input before it can emit anything.
+    @since NEXT_RELEASE *)
+
+val group_count :
+  (module HashedType with type t = 'a) ->
+  'a t -> ('a * int) t
+(** Map each distinct element to its number of occurrences in the whole seq.
+    Similar to
+    [group_by_fold hash_key ~project:(fun x->x) ~fold:(fun a _->a+1) ~init:0 seq].
+
+    This function needs to consume the whole input before it can emit anything.
+    @since NEXT_RELEASE *)
+
+val join_by :
+  (module HashedType with type t = 'key) ->
+  project_left:('a -> 'key) ->
+  project_right:('b -> 'key) ->
+  merge:('key -> 'a -> 'b -> 'c option) ->
+  'a t ->
+  'b t ->
+  'c t
+(** [join_by ~project_left ~project_right ~merge a b] takes every pair
+    of elements [x] from [a] and [y] from [b], and if they map onto the
+    same key [k] by [project_left] and [project_right] respectively,
+    and if [merge k x y = Some res], then it yields [res].
+
+    If [merge k x y] returns [None], the combination
+    of values is discarded.
+
+    This function works with infinite inputs, it does not have to consume
+    the whole input before yielding elements.
+
+    @since NEXT_RELEASE *)
+
+
+val join_by_fold :
+  (module HashedType with type t = 'key) ->
+  project_left:('a -> 'key) ->
+  project_right:('b -> 'key) ->
+  init:'c ->
+  merge:('key -> 'a -> 'b -> 'c -> 'c) ->
+  'a t ->
+  'b t ->
+  'c t
+(** [join_by_fold ~project_left ~project_right ~init ~merge a b] takes every pair
+    of elements [x] from [a] and [y] from [b], and if they map onto the
+    same key [k] by [project_left] and [project_right] respectively,
+    it fold [x] and [y] into the accumulator for this key (which starts at [init]).
+
+    This function consumes both inputs entirely before it emits anything.
+
+    @since NEXT_RELEASE *)
+
 (** {2 Basic conversion functions} *)
 
 val of_list : 'a list -> 'a t
