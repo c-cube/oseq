@@ -6,7 +6,6 @@ let rec seq_of_list_ l () =
   | [] -> Seq.Nil
   | x :: tl -> Seq.Cons (x, seq_of_list_ tl)
 module Tbl_make(H:Hashtbl.HashedType) = struct
-  let seq_of_list = of_list
   include Hashtbl.Make(H)
 
   let to_seq tbl =
