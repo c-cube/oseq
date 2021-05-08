@@ -29,7 +29,7 @@ type 'a seq = 'a t (* alias *)
     ignore (OSeq.empty : int Seq.t)
 *)
 
-type 'a sequence = ('a -> unit) -> unit
+type 'a iter = ('a -> unit) -> unit
 type 'a gen = unit -> 'a option
 type 'a equal = 'a -> 'a -> bool
 type 'a ord = 'a -> 'a -> int
@@ -363,14 +363,6 @@ let rec exists2 f l1 l2 = match l1(), l2() with
   | Cons(x1,l1'), Cons(x2,l2') ->
     f x1 x2 || exists2 f l1' l2'
 
-let rec merge cmp l1 l2 () = match l1(), l2() with
-  | Nil, tl2 -> tl2
-  | tl1, Nil -> tl1
-  | Cons(x1,l1'), Cons(x2,l2') ->
-    if cmp x1 x2 < 0
-    then Cons (x1, merge cmp l1' l2)
-    else Cons (x2, merge cmp l1 l2')
-
 let rec zip a b () = match a(), b() with
   | Nil, _
   | _, Nil -> Nil
@@ -388,7 +380,7 @@ let unzip l =
 
 (*$Q
   Q.(list (pair int int)) (fun l -> \
-    let l = of_list l in let a, b = unzip l in equal (=) l (zip a b))
+    let l = of_list l in let a, b = unzip l in equal ~eq:(=) l (zip a b))
 *)
 
 let compare ~cmp gen1 gen2 : int =
@@ -443,16 +435,16 @@ let rec interleave a b () = match a() with
   | Nil -> b ()
   | Cons (x, tail) -> Cons (x, interleave b tail)
 
-let rec fair_flat_map f a () = match a() with
+let rec flat_map_interleave f a () = match a() with
   | Nil -> Nil
   | Cons (x, tail) ->
     let y = f x in
-    interleave y (fair_flat_map f tail) ()
+    interleave y (flat_map_interleave f tail) ()
 
-let rec fair_app f a () = match f() with
+let rec app_interleave f a () = match f() with
   | Nil -> Nil
   | Cons (f1, fs) ->
-    interleave (map f1 a) (fair_app fs a) ()
+    interleave (map f1 a) (app_interleave fs a) ()
 
 let rec flatten l () =
   match l() with
@@ -568,8 +560,6 @@ module Infix = struct
   let (>|=) xs f = map f xs
   let (>>|) xs f = map f xs
   let (<*>) = app
-  let (>>-) a f = fair_flat_map f a
-  let (<.>) f a = fair_app f a
   let (--) = (--)
   let (--^) = (--^)
 end
@@ -1048,9 +1038,9 @@ let concat_string ~sep s =
     in
     Bytes.unsafe_to_string bytes
 
-let rec to_seq res k = match res () with
+let rec to_iter res k = match res () with
   | Nil -> ()
-  | Cons (s, f) -> k s; to_seq f k
+  | Cons (s, f) -> k s; to_iter f k
 
 let to_gen l =
   let l = ref l in
@@ -1215,7 +1205,7 @@ end
       in
       run (aux seq)
     in
-    equal Stdlib.(=) seq seq2)
+    equal ~eq:Stdlib.(=) seq seq2)
 *)
 
 module IO = struct

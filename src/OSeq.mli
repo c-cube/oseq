@@ -8,7 +8,7 @@ and 'a node = 'a Seq.node =
 
 type 'a seq = 'a t (* alias *)
 
-type 'a sequence = ('a -> unit) -> unit
+type 'a iter = ('a -> unit) -> unit
 type 'a gen = unit -> 'a option
 type 'a equal = 'a -> 'a -> bool
 type 'a ord = 'a -> 'a -> int
@@ -23,6 +23,7 @@ val return : 'a -> 'a t
 val cons : 'a -> 'a t -> 'a t
 
 val repeat : 'a -> 'a t
+(** Repeat same element endlessly *)
 
 val head_exn : 'a t -> 'a
 (** Returns first element, or fails.
@@ -33,7 +34,6 @@ val tail_exn : 'a t -> 'a t
 (** Returns list without its first element, or fails.
     @raise Invalid_argument on an empty sequence
     @since NEXT_RELEASE *)
-(** Repeat same element endlessly *)
 
 val cycle : 'a t -> 'a t
 (** Cycle through the iterator infinitely. The iterator shouldn't be empty.
@@ -142,6 +142,18 @@ val flat_map : ('a -> 'b t) -> 'a t -> 'b t
 (** Monadic bind; each element is transformed to a sub-iterator
     which is then iterated on, before the next element is processed,
     and so on. *)
+
+val app_interleave : ('a -> 'b) t -> 'a t -> 'b t
+(** Same as {!app} but interleaves the values of the function
+    and the argument iterators.
+    See {!interleave} for more details.
+    @since NEXT_RELEASE *)
+
+val flat_map_interleave : ('a -> 'b t) -> 'a t -> 'b t
+(** [flat_map_interleave f seq] is similar to [flat_map f seq],
+    except that each sub-sequence is interleaved rather than concatenated in
+    order. See {!interleave} for more details.
+    @since NEXT_RELEASE *)
 
 val mem : eq:('a -> 'a -> bool) -> 'a -> 'a t -> bool
 (** Is the given element, member of the iterator? *)
@@ -268,8 +280,9 @@ val round_robin : ?n:int -> 'a t -> 'a t list
 
 val interleave : 'a t -> 'a t -> 'a t
 (** [interleave a b] yields an element of [a], then an element of [b],
-    and so on. When a iterator is exhausted, this behaves like the
-    other iterator. *)
+    and so on. When one of the iterators is exhausted, this behaves like the
+    other iterator.
+*)
 
 val intersperse : 'a -> 'a t -> 'a t
 (** Put the separator element between all elements of the given iterator *)
@@ -383,6 +396,10 @@ val of_gen_transient : 'a gen -> 'a t
     Use {!memoize} to recover the proper semantics, or use {!of_gen}
     directly. *)
 
+val to_gen : 'a t -> 'a gen
+(** Build a mutable iterator that traverses this functional iterator.
+    @since NEXT_RELEASE *)
+
 val of_string : ?start:int -> ?len:int -> string -> char t
 (** Iterate on bytes of the string *)
 
@@ -391,6 +408,10 @@ val to_string : char t -> string
 
 val to_buffer : Buffer.t -> char t -> unit
 (** Traverse the iterator and writes its content to the buffer *)
+
+val to_iter : 'a t -> 'a iter
+(** Iterate on the whole sequence.
+    @since NEXT_RELEASE *)
 
 val concat_string : sep:string -> string t -> string
 (** [concat_string ~sep s] concatenates all strings of [i], separated with [sep].
