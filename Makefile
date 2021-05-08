@@ -29,10 +29,6 @@ reindent:
 	@find src '(' -name '*.ml' -or -name '*.mli' ')' -type f -print0 | xargs -0 ocp-indent -i
 
 watch:
-	while find src/ -print0 | xargs -0 inotifywait -e delete_self -e modify ; do \
-		echo "============ at `date` ==========" ; \
-		sleep 0.2; \
-		make all; \
-	done
+	@dune build @install -w
 
 .PHONY: benchs tests examples update_next_tag watch
