@@ -9,8 +9,8 @@
   (public_name oseq)
   (wrapped false)
   (modules OSeq)
-  (flags :standard -w +a-4-42-44-48-50-58-32-60@8 -safe-string -nolabels -warn-error -a+8)
+  (flags :standard -safe-string -nolabels -warn-error -a+8)
   (ocamlopt_flags :standard (:include flambda.flags))
-  (inline_tests (backend qtest.lib) (libraries containers))
+  ;(inline_tests (backend qtest.lib) (libraries containers))
   (libraries seq))
 
