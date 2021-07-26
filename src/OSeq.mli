@@ -510,8 +510,10 @@ val unlines : string t -> char t
 
 module Infix : sig
   val (--) : int -> int -> int t
+  (** Integer range, inclusive *)
 
   val (--^) : int -> int -> int t
+  (** Integer range, exclusive in the right bound *)
 
   val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
   (** Monadic bind operator *)
