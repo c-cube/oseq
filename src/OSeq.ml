@@ -1145,18 +1145,24 @@ let unlines g : _ t =
 type 'a memoize =
   | MemoThunk
   | MemoSave of 'a node
+  | MemoExn of exn
 
 let rec memoize f =
   let r = ref MemoThunk in
   fun () -> match !r with
     | MemoSave l -> l
+    | MemoExn e -> raise e
     | MemoThunk ->
-      let l = match f() with
-        | Nil -> Nil
-        | Cons (x, tail) -> Cons (x, memoize tail)
-      in
-      r := MemoSave l;
-      l
+      try
+        let l = match f() with
+          | Nil -> Nil
+          | Cons (x, tail) -> Cons (x, memoize tail)
+        in
+        r := MemoSave l;
+        l
+      with e ->
+        r := MemoExn e;
+        raise e
 
 module Generator = struct
   type 'a t =
