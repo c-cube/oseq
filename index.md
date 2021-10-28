@@ -3,6 +3,7 @@
 ## Documentation
 
 - [latest](0.3)
+- [development version](dev/)
 
 - [0.3](0.3)
 - [0.2](0.2)
