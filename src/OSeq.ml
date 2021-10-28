@@ -14,11 +14,7 @@
   let pstrlist l = plist (Printf.sprintf "%S") l
 *)
 
-type 'a t = unit -> 'a node
-
-and 'a node = 'a Seq.node =
-  | Nil
-  | Cons of 'a * 'a t
+include Seq
 
 type 'a seq = 'a t (* alias *)
 
