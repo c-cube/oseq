@@ -12,6 +12,8 @@
   let pilistlist l = plist (plist pint) l
   let pi2list l = plist (ppair pint pint) l
   let pstrlist l = plist (Printf.sprintf "%S") l
+
+  let lsort l=List.sort Stdlib.compare l
 *)
 
 include Seq
@@ -528,25 +530,32 @@ let unfold_scan f acc g =
 *)
 
 let product_with f l1 l2 =
-  let rec next_left l1 l2 () = match l1() with
+  (* take next element from [l1] *)
+  let rec loop l1 () = match l1() with
     | Nil -> Nil
-    | Cons (x1, tl1) -> append_all ~tl1 ~l2_init:l2 x1 l2 ()
-  and append_all ~tl1 ~l2_init x1 l2 () = match l2() with
-    | Nil -> next_left tl1 l2_init ()
-    | Cons (x2, tl2) ->
-      Cons (f x1 x2, append_all ~tl1 ~l2_init x1 tl2)
+    | Cons (x1, tl1) ->
+      let seq =
+        interleave
+          (map (fun x2 -> f x1 x2) l2)
+          (loop tl1)
+      in
+      seq()
   in
-  next_left l1 l2
+  loop l1
 
 (*$Q
   Q.(pair (small_list int)(small_list int)) (fun (l1,l2) -> \
-    let lsort=List.sort Stdlib.compare in \
     lsort (List.flatten@@List.map (fun x ->List.map (fun y->x,y) l2)l1) = \
     lsort (product (of_list l1)(of_list l2) |> to_list))
 *)
 
 let product l1 l2 =
   product_with (fun x y -> x,y) l1 l2
+
+(*$R
+  let l = product (of_list [true;false]) (1--max_int) |> take 10 |> to_list in
+  assert_bool "a bit fair" (List.exists (fun (b,_) -> b=false) l)
+*)
 
 let app fs xs = product_with (fun f x -> f x) fs xs
 
