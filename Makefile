@@ -28,7 +28,8 @@ reindent:
 	@find src '(' -name '*.ml' -or -name '*.mli' ')' -type f -print0 | xargs -0 echo "reindenting: "
 	@find src '(' -name '*.ml' -or -name '*.mli' ')' -type f -print0 | xargs -0 ocp-indent -i
 
+WATCH?=@install
 watch:
-	@dune build @install -w
+	@dune build $(WATCH) -w
 
 .PHONY: benchs tests examples update_next_tag watch
