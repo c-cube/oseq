@@ -25,12 +25,12 @@ val repeat : 'a -> 'a t
 val head_exn : 'a t -> 'a
 (** Returns first element, or fails.
     @raise Invalid_argument on an empty sequence
-    @since NEXT_RELEASE *)
+    @since 0.4 *)
 
 val tail_exn : 'a t -> 'a t
 (** Returns list without its first element, or fails.
     @raise Invalid_argument on an empty sequence
-    @since NEXT_RELEASE *)
+    @since 0.4 *)
 
 val cycle : 'a t -> 'a t
 (** Cycle through the iterator infinitely. The iterator shouldn't be empty.
@@ -144,13 +144,13 @@ val app_interleave : ('a -> 'b) t -> 'a t -> 'b t
 (** Same as {!app} but interleaves the values of the function
     and the argument iterators.
     See {!interleave} for more details.
-    @since NEXT_RELEASE *)
+    @since 0.4 *)
 
 val flat_map_interleave : ('a -> 'b t) -> 'a t -> 'b t
 (** [flat_map_interleave f seq] is similar to [flat_map f seq],
     except that each sub-sequence is interleaved rather than concatenated in
     order. See {!interleave} for more details.
-    @since NEXT_RELEASE *)
+    @since 0.4 *)
 
 val mem : eq:('a -> 'a -> bool) -> 'a -> 'a t -> bool
 (** Is the given element, member of the iterator? *)
@@ -368,7 +368,7 @@ val power_set : 'a t -> 'a list t
 (** A type that can be compared and hashed.
     invariant: for any [x] and [y], if [equal x y] then [hash x=hash y] must hold.
 
-    @since NEXT_RELEASE *)
+    @since 0.4 *)
 module type HashedType = Hashtbl.HashedType
 
 val group_by :
@@ -381,7 +381,7 @@ val group_by :
 
     This function needs to consume the whole input before it can emit anything.
 
-    @since NEXT_RELEASE *)
+    @since 0.4 *)
 
 val group_by_fold :
   (module HashedType with type t = 'key) ->
@@ -395,7 +395,7 @@ val group_by_fold :
     This is the most general version of the "group_by" functions.
 
     This function needs to consume the whole input before it can emit anything.
-    @since NEXT_RELEASE *)
+    @since 0.4 *)
 
 val group_count :
   (module HashedType with type t = 'a) ->
@@ -405,7 +405,7 @@ val group_count :
     [group_by_fold hash_key ~project:(fun x->x) ~fold:(fun a _->a+1) ~init:0 seq].
 
     This function needs to consume the whole input before it can emit anything.
-    @since NEXT_RELEASE *)
+    @since 0.4 *)
 
 val join_by :
   (module HashedType with type t = 'key) ->
@@ -426,7 +426,7 @@ val join_by :
     This function works with infinite inputs, it does not have to consume
     the whole input before yielding elements.
 
-    @since NEXT_RELEASE *)
+    @since 0.4 *)
 
 
 val join_by_fold :
@@ -445,7 +445,7 @@ val join_by_fold :
 
     This function consumes both inputs entirely before it emits anything.
 
-    @since NEXT_RELEASE *)
+    @since 0.4 *)
 
 (** {2 Basic conversion functions} *)
 
@@ -479,7 +479,7 @@ val of_gen_transient : 'a gen -> 'a t
 
 val to_gen : 'a t -> 'a gen
 (** Build a mutable iterator that traverses this functional iterator.
-    @since NEXT_RELEASE *)
+    @since 0.4 *)
 
 val of_string : ?start:int -> ?len:int -> string -> char t
 (** Iterate on bytes of the string *)
@@ -492,7 +492,7 @@ val to_buffer : Buffer.t -> char t -> unit
 
 val to_iter : 'a t -> 'a iter
 (** Iterate on the whole sequence.
-    @since NEXT_RELEASE *)
+    @since 0.4 *)
 
 val concat_string : sep:string -> string t -> string
 (** [concat_string ~sep s] concatenates all strings of [i], separated with [sep].
