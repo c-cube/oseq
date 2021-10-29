@@ -1,13 +1,7 @@
 (** {1 OSeq: Functional Iterators} *)
 
-type 'a t = unit -> 'a node
-and 'a node = 'a Seq.node =
-  | Nil
-  | Cons of 'a * 'a t
-
 include module type of Seq
-  with type 'a t := 'a Seq.t
-   and type 'a node := 'a Seq.node
+  with type 'a node = 'a Seq.node
 
 type 'a seq = 'a t (* alias *)
 
