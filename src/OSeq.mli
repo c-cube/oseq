@@ -311,9 +311,13 @@ val product7 : 'a t -> 'b t -> 'c t -> 'd t -> 'e t -> 'f t -> 'g t
     @since 0.2 *)
 
 val cartesian_product : 'a t t -> 'a list t
-(** Produce the cartesian product of this list of lists,
-    by returning all the ways of picking one element per sublist.
-    {b NOTE} the order of the returned list is unspecified.
+(** Produce the cartesian product of this sequence of sequences,
+    by returning all the ways of picking one element per sequence.
+    {b NOTE} the order of the returned sequence is unspecified.
+
+    This assumes each sub-sequence is finite, and that the main sequence
+    is also finite.
+
     For example:
     {[
       # cartesian_product [[1;2];[3];[4;5;6]] |> sort =
