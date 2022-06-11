@@ -1,3 +1,7 @@
+## 0.4.1
+
+- fix error in tests related to `-nolabels`
+
 ## 0.4
 
 - use `include Seq` so we're forward compatible with OCaml
