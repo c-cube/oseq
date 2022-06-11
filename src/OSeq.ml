@@ -1095,7 +1095,7 @@ let sort ~cmp l =
 
 let sort_uniq ~cmp l =
   let l = to_list l in
-  uniq (fun x y -> cmp x y = 0) (of_list (List.sort cmp l))
+  uniq ~eq:(fun x y -> cmp x y = 0) (of_list (List.sort cmp l))
 
 let lines g : _ t =
   let rec aux g buf () =
