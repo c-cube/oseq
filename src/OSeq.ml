@@ -16,9 +16,7 @@
   let lsort l=List.sort Stdlib.compare l
 *)
 
-include Seq
-
-type 'a seq = 'a t (* alias *)
+open Seq
 
 (* compat test, ensure Seq.t and OSeq.t are the same *)
 (*$inject
@@ -26,6 +24,8 @@ type 'a seq = 'a t (* alias *)
     ignore (Seq.empty : int OSeq.t);
     ignore (OSeq.empty : int Seq.t)
 *)
+
+type 'a seq = 'a Seq.t (* alias *)
 
 type 'a iter = ('a -> unit) -> unit
 type 'a gen = unit -> 'a option
@@ -105,7 +105,7 @@ let init ?(n=max_int) f =
   aux 0
 
 (*$T init
-  init ~n:5 (fun i->i) |> to_list = [0;1;2;3;4]
+  init 5 (fun i->i) |> to_list = [0;1;2;3;4]
 *)
 
 let mapi f l =
@@ -157,7 +157,7 @@ let iterate x f =
   aux f x
 
 (*$T iterate
-  iterate 0 ((+)1) |> take 5 |> to_list = [0;1;2;3;4]
+  iterate ((+)1) 0 |> take 5 |> to_list = [0;1;2;3;4]
 *)
 
 
@@ -255,7 +255,7 @@ let rec nth i l =
   (try ignore (nth 11 (1--10)); false with Not_found -> true)
 *)
 
-let mem ~eq x gen =
+let mem eq x gen =
   let rec mem eq x gen =
     match gen() with
     | Nil -> false
@@ -294,7 +294,7 @@ let max ~lt gen =
   (try ignore (max ~lt:(<) empty); false with Invalid_argument _ -> true)
 *)
 
-let equal ~eq gen1 gen2 =
+let equal eq gen1 gen2 =
   let rec check gen1 gen2 =
     match gen1(), gen2() with
     | Nil, Nil -> true
@@ -305,7 +305,7 @@ let equal ~eq gen1 gen2 =
 
 (*$Q
   (Q.pair (Q.list Q.small_int)(Q.list Q.small_int)) (fun (l1,l2) -> \
-    equal ~eq:Stdlib.(=) (of_list l1)(of_list l2) = (l1 = l2))
+    equal Stdlib.(=) (of_list l1)(of_list l2) = (l1 = l2))
 *)
 
 (* [partition p l] returns the elements that satisfy [p],
@@ -378,10 +378,10 @@ let unzip l =
 
 (*$Q
   Q.(list (pair int int)) (fun l -> \
-    let l = of_list l in let a, b = unzip l in equal ~eq:(=) l (zip a b))
+    let l = of_list l in let a, b = unzip l in equal (=) l (zip a b))
 *)
 
-let compare ~cmp gen1 gen2 : int =
+let compare cmp gen1 gen2 : int =
   let rec aux gen1 gen2 =
     match gen1(), gen2() with
     | Nil, Nil -> 0
@@ -395,7 +395,7 @@ let compare ~cmp gen1 gen2 : int =
 (*$Q
   (Q.pair (Q.list Q.small_int)(Q.list Q.small_int)) (fun (l1,l2) -> \
     let sign x = if x < 0 then -1 else if x=0 then 0 else 1 in \
-    sign (compare ~cmp:Stdlib.compare (of_list l1)(of_list l2)) = sign (Stdlib.compare l1 l2))
+    sign (compare Stdlib.compare (of_list l1)(of_list l2)) = sign (Stdlib.compare l1 l2))
 *)
 
 let rec find p e = match e () with
@@ -619,19 +619,19 @@ let map_product_l f l =
   let l = map f l in
   cartesian_product l
 
-let rec group ~eq l () = match l() with
+let rec group eq l () = match l() with
   | Nil -> Nil
   | Cons (x, l') ->
-    Cons (cons x (take_while (eq x) l'), group ~eq (drop_while (eq x) l'))
+    Cons (cons x (take_while (eq x) l'), group eq (drop_while (eq x) l'))
 
 (*$T
-  of_list [1;1;1;2;2;3;3;1] |> group ~eq:(=) |> map to_list |> to_list = \
+  of_list [1;1;1;2;2;3;3;1] |> group (=) |> map to_list |> to_list = \
     [[1;1;1]; [2;2]; [3;3]; [1]]
 *)
 
 (*$Q
     Q.(small_list int) (fun l -> \
-      (of_list l |> group ~eq:(=) |> flatten |> to_list) = l)
+      (of_list l |> group (=) |> flatten |> to_list) = l)
     *)
 
 let rec uniq_rec_ eq prev l () = match prev, l() with
@@ -643,7 +643,7 @@ let rec uniq_rec_ eq prev l () = match prev, l() with
     then uniq_rec_ eq prev l' ()
     else Cons (x, uniq_rec_ eq (Some x) l')
 
-let uniq ~eq l = uniq_rec_ eq None l
+let uniq eq l = uniq_rec_ eq None l
 
 let chunks n e =
   let rec aux e () =
@@ -758,9 +758,9 @@ let merge gens : _ t =
 *)
 
 (*$T
-  mem ~eq:(=) (3,5) @@ \
+  mem (=) (3,5) @@ \
   take 20_000 @@ merge @@ \
-  map (fun i -> iterate 0 succ |> map (fun j -> (i, j))) @@ iterate 0 succ
+  map (fun i -> iterate succ 0 |> map (fun j -> (i, j))) @@ iterate succ 0 
 *)
 
 (*$R
@@ -770,7 +770,7 @@ let merge gens : _ t =
     (to_list e' |> List.sort Stdlib.compare);
 *)
 
-let intersection ~cmp gen1 gen2 : _ t =
+let intersection cmp gen1 gen2 : _ t =
   let rec next x1 x2 () =
     match x1, x2 with
     | Cons (y1,tl1), Cons (y2,tl2) ->
@@ -786,7 +786,7 @@ let intersection ~cmp gen1 gen2 : _ t =
   fun () -> next (gen1()) (gen2()) ()
 
 (*$= & ~printer:pilist
-  [1;2;4;8] (intersection ~cmp:Stdlib.compare \
+  [1;2;4;8] (intersection Stdlib.compare \
     (of_list [1;1;2;3;4;8]) (of_list [1;2;4;5;6;7;8;9]) |> to_list)
 *)
 
@@ -807,7 +807,7 @@ let rec zip_with f a b () =
 *)
 
 
-let sorted_merge ~cmp gen1 gen2 : _ t =
+let sorted_merge cmp gen1 gen2 : _ t =
   let rec next x1 x2 () =
     match x1, x2 with
     | Nil, Nil -> Nil
@@ -821,7 +821,7 @@ let sorted_merge ~cmp gen1 gen2 : _ t =
   fun () -> next (gen1()) (gen2()) ()
 
 (*$T
-  sorted_merge ~cmp:Stdlib.compare \
+  sorted_merge Stdlib.compare \
   (of_list [1;2;2;3;5;10;100]) (of_list [2;4;5;6;11]) \
     |> to_list = [1;2;2;2;3;4;5;5;6;10;11;100]
 *)
@@ -1089,13 +1089,13 @@ let rec of_gen_transient f () =
   | None -> Nil
   | Some x -> Cons (x, of_gen_transient f)
 
-let sort ~cmp l =
+let sort cmp l =
   let l = to_list l in
   of_list (List.sort cmp l)
 
-let sort_uniq ~cmp l =
+let sort_uniq cmp l =
   let l = to_list l in
-  uniq ~eq:(fun x y -> cmp x y = 0) (of_list (List.sort cmp l))
+  uniq (fun x y -> cmp x y = 0) (of_list (List.sort cmp l))
 
 let lines g : _ t =
   let rec aux g buf () =
@@ -1215,7 +1215,7 @@ end
       in
       run (aux seq)
     in
-    equal ~eq:Stdlib.(=) seq seq2)
+    equal Stdlib.(=) seq seq2)
 *)
 
 module type HashedType = Hashtbl.HashedType
@@ -1251,7 +1251,7 @@ let group_count key seq =
   [1;2;3;3;2;2;3;4]
    |> of_list
    |> group_by (module IntK) ~project:(fun x->x)
-   |> map snd |> sort ~cmp:CCOrd.compare
+   |> map snd |> sort CCOrd.compare
    |> to_list
    |> OUnit.assert_equal [[1];[2;2;2];[3;3;3];[4]]
 *)
@@ -1442,3 +1442,9 @@ let pp ?(sep=",") pp_item fmt l =
   | Nil -> ()
   | Cons (x,l') -> pp_item fmt x; pp fmt l'
 
+include Seq
+
+(* test for compat with seq *)
+(*$inject
+  module Foo : module type of Seq = OSeq
+*)

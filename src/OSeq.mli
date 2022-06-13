@@ -1,9 +1,7 @@
 (** {1 OSeq: Functional Iterators} *)
 
-include module type of Seq
-  with type 'a node = 'a Seq.node
-
-type 'a seq = 'a t (* alias *)
+type 'a t = 'a Seq.t
+type 'a seq = 'a Seq.t (* alias *)
 
 type 'a iter = ('a -> unit) -> unit
 type 'a gen = unit -> 'a option
@@ -39,7 +37,7 @@ val cycle : 'a t -> 'a t
     ]}
 *)
 
-val iterate : 'a -> ('a -> 'a) -> 'a t
+val iterate : ('a -> 'a) -> 'a -> 'a t
 (** [iterate x f] is [[x; f x; f (f x); f (f (f x)); ...]].
 
     {[# OSeq.(iterate 0 succ |> take 10 |> to_list);;
@@ -61,11 +59,10 @@ val repeatedly : (unit -> 'a) -> 'a t
 (** Call the same function an infinite number of times (useful for instance
     if the function is a random iterator). *)
 
-val init : ?n:int -> (int -> 'a) -> 'a t
-(** Calls the function, starting from 0, on increasing indices.
-    If [n] is provided and is a positive int, iteration will
-    stop at the limit (excluded).
-    For instance [init ~n:4 (fun x->x)] will yield 0, 1, 2, and 3. *)
+val init : int -> (int -> 'a) -> 'a t
+(** Calls the function, starting from 0, on increasing indices, up to [n-1].
+    [n] must be non-negative.
+    For instance [init 4 (fun x->x)] will yield 0, 1, 2, and 3. *)
 
 (** {2 Basic combinators} *)
 
@@ -152,7 +149,7 @@ val flat_map_interleave : ('a -> 'b t) -> 'a t -> 'b t
     order. See {!interleave} for more details.
     @since 0.4 *)
 
-val mem : eq:('a -> 'a -> bool) -> 'a -> 'a t -> bool
+val mem : ('a -> 'a -> bool) -> 'a -> 'a t -> bool
 (** Is the given element, member of the iterator? *)
 
 val take : int -> 'a t -> 'a t
@@ -209,10 +206,10 @@ val max : lt:('a -> 'a -> bool) -> 'a t -> 'a
 (** Maximum element, see {!min}
     @raise Invalid_argument if the iterator is empty *)
 
-val equal : eq:('a -> 'a -> bool) -> 'a t -> 'a t -> bool
+val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
 (** Equality of iterators. *)
 
-val compare : cmp:('a -> 'a -> int) -> 'a t -> 'a t -> int
+val compare : ('a -> 'a -> int) -> 'a t -> 'a t -> int
 (** Lexicographic comparison of iterators. If a iterator is a prefix
     of the other one, it is considered smaller. *)
 
@@ -263,11 +260,11 @@ val merge : 'a t t -> 'a t
     their merge is also empty.
     For instance, [merge [1;3;5] [2;4;6]] will be, in disorder, [1;2;3;4;5;6]. *)
 
-val intersection : cmp:('a -> 'a -> int) -> 'a t -> 'a t -> 'a t
+val intersection : ('a -> 'a -> int) -> 'a t -> 'a t -> 'a t
 (** Intersection of two sorted iterators. Only elements that occur in both
     inputs appear in the output *)
 
-val sorted_merge : cmp:('a -> 'a -> int) -> 'a t -> 'a t -> 'a t
+val sorted_merge : ('a -> 'a -> int) -> 'a t -> 'a t -> 'a t
 (** Merge two sorted iterators into a sorted iterator *)
 
 val round_robin : ?n:int -> 'a t -> 'a t list
@@ -336,17 +333,17 @@ val map_product_l : ('a -> 'b t) -> 'a t -> 'b list t
     Then, it returns all the ways of picking exactly one element per [li].
     @since 0.2 *)
 
-val group : eq:('a -> 'a -> bool) -> 'a t -> 'a t t
+val group : ('a -> 'a -> bool) -> 'a t -> 'a t t
 (** Group equal consecutive elements together. *)
 
-val uniq : eq:('a -> 'a -> bool) -> 'a t -> 'a t
+val uniq : ('a -> 'a -> bool) -> 'a t -> 'a t
 (** Remove consecutive duplicate elements. Basically this is
     like [fun e -> map List.hd (group e)]. *)
 
-val sort : cmp:('a -> 'a -> int) -> 'a t -> 'a t
+val sort : ('a -> 'a -> int) -> 'a t -> 'a t
 (** Sort according to the given comparison function. The iterator must be finite. *)
 
-val sort_uniq : cmp:('a -> 'a -> int) -> 'a t -> 'a t
+val sort_uniq : ('a -> 'a -> int) -> 'a t -> 'a t
 (** Sort and remove duplicates. The iterator must be finite. *)
 
 val chunks : int -> 'a t -> 'a array t
@@ -634,3 +631,7 @@ module Traverse(M : MONAD) : sig
 
   val map_m : ('a -> 'b M.t) -> 'a t -> 'b t M.t
 end
+
+include module type of Seq
+  with type 'a node = 'a Seq.node
+and type 'a t := 'a t
