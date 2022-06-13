@@ -1442,7 +1442,3 @@ let pp ?(sep=",") pp_item fmt l =
   | Nil -> ()
   | Cons (x,l') -> pp_item fmt x; pp fmt l'
 
-(* test for compat with seq *)
-(*$inject
-  module Foo : module type of Seq = OSeq
-*)
