@@ -561,12 +561,16 @@ let app fs xs = product_with (fun f x -> f x) fs xs
 
 
 module Infix = struct
-  let (>>=) xs f = flat_map f xs
-  let (>|=) xs f = map f xs
-  let (>>|) xs f = map f xs
+  let[@inline](>>=) xs f = flat_map f xs
+  let[@inline](>|=) xs f = map f xs
+  let[@inline](>>|) xs f = map f xs
   let (<*>) = app
   let (--) = (--)
   let (--^) = (--^)
+  let[@inline] ( let+ ) x f = map f x
+  let[@inline] ( let* ) x f = flat_map f x
+  let ( and+ ) = product
+  let ( and* ) = product
 end
 
 include Infix
