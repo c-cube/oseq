@@ -100,7 +100,7 @@ let rec repeat x () = Cons (x, repeat x)
   repeat 1 |> take 0 |> to_list = []
 *)
 
-let init ?(n = max_int) f =
+let init n f =
   let rec aux r () =
     if r >= n then
       Nil
@@ -156,7 +156,7 @@ let rec append a b () =
 
 let rec cycle l () = append l (cycle l) ()
 
-let iterate x f =
+let iterate f x =
   let rec aux f x () =
     let y = f x in
     Cons (x, aux f y)
@@ -795,7 +795,7 @@ let merge gens : _ t =
 (*$T
   mem (=) (3,5) @@ \
   take 20_000 @@ merge @@ \
-  map (fun i -> iterate succ 0 |> map (fun j -> (i, j))) @@ iterate succ 0 
+  map (fun i -> iterate succ 0 |> map (fun j -> (i, j))) @@ iterate succ 0
 *)
 
 (*$R
