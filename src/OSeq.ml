@@ -1221,7 +1221,7 @@ end
 module type HashedType = Hashtbl.HashedType
 
 let group_by_fold (type k) (module K : HashedType with type t = k) ~project ~fold ~init seq =
-  let module Tbl = OSeq_shims_.Tbl_make(K) in
+  let module Tbl = Hashtbl.Make(K) in
   (* compute group table *)
   let tbl = lazy (
     let tbl = Tbl.create 32 in
@@ -1258,7 +1258,7 @@ let group_count key seq =
 
 let join_by (type k) (module Key : HashedType with type t = k)
     ~project_left ~project_right ~merge seq1 seq2 : _ t =
-  let module Tbl = OSeq_shims_.Tbl_make(Key) in
+  let module Tbl = Hashtbl.Make(Key) in
   let tbl_left = Tbl.create 16 in
   let tbl_right = Tbl.create 16 in
 
@@ -1311,7 +1311,7 @@ let join_by (type k) (module Key : HashedType with type t = k)
 
 let join_by_fold (type k) (module Key : HashedType with type t = k)
     ~project_left ~project_right ~init ~merge seq1 seq2 : _ t =
-  let module Tbl = OSeq_shims_.Tbl_make(Key) in
+  let module Tbl = Hashtbl.Make(Key) in
 
   let tbl_left = Tbl.create 16 in
   let get_l tbl k = try Tbl.find tbl k with Not_found -> [] in

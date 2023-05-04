@@ -1,4 +1,4 @@
-(** {1 OSeq: Functional Iterators} *)
+(** OSeq: Functional Iterators *)
 
 type 'a t = 'a Seq.t
 type 'a seq = 'a Seq.t (* alias *)
