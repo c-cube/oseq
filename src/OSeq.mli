@@ -537,19 +537,19 @@ module Infix : sig
 
   val ( let+ ) : 'a t -> ('a -> 'b) -> 'b t
   (** Alias for {!map}
-      @since NEXT_RELEASE *)
+      @since 0.5 *)
 
   val ( and+ ) : 'a t -> 'b t -> ('a * 'b) t
   (** Alias for {!product}
-      @since NEXT_RELEASE *)
+      @since 0.5 *)
 
   val ( let* ) : 'a t -> ('a -> 'b t) -> 'b t
   (** Alias for {!flat_map}
-      @since NEXT_RELEASE *)
+      @since 0.5 *)
 
   val ( and* ) : 'a t -> 'b t -> ('a * 'b) t
   (** Alias for {!product}
-      @since NEXT_RELEASE *)
+      @since 0.5 *)
 end
 
 include module type of Infix

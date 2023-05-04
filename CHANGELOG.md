@@ -1,3 +1,10 @@
+## 0.5
+
+- use ocamlformat
+- add let-operators
+- require OCaml 4.08
+- breaking: remove most labels, ensure compatibility with extended Seq
+
 ## 0.4.1
 
 - fix error in tests related to `-nolabels`

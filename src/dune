@@ -10,6 +10,4 @@
   (wrapped false)
   (modules OSeq)
   (flags :standard -safe-string -warn-error -a+8)
-  (ocamlopt_flags :standard (:include flambda.flags))
-  ;(inline_tests (backend qtest.lib) (libraries containers))
-  (libraries seq))
+  (ocamlopt_flags :standard (:include flambda.flags)))
