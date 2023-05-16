@@ -12,7 +12,6 @@ build: [
 depends: [
   "dune" { >= "1.0" }
   "qcheck" {with-test}
-  "qtest" {with-test}
   "gen" {with-test}
   "containers" {with-test}
   "odoc" {with-doc}

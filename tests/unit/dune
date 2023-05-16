@@ -1,0 +1,4 @@
+
+(tests
+  (names t_oseq)
+  (libraries oseq containers qcheck-core qcheck-core.runner ounit2))

@@ -1,28 +1,4 @@
-(** {1 OSeq: Functional Iterators} *)
-
-(*$inject
-  [@@@ocaml.warning "-33-5"]
-  open CCShims_
-
-  let plist f l = "["^String.concat ";" (List.map f l) ^"]"
-  let ppair f1 f2 (x,y) = Printf.sprintf "(%s,%s)" (f1 x)(f2 y)
-  let pint i = string_of_int i
-  let pilist l = plist pint l
-  let pilistlist l = plist (plist pint) l
-  let pi2list l = plist (ppair pint pint) l
-  let pstrlist l = plist (Printf.sprintf "%S") l
-
-  let lsort l=List.sort Stdlib.compare l
-*)
-
 open Seq
-
-(* compat test, ensure Seq.t and OSeq.t are the same *)
-(*$inject
-  let () =
-    ignore (Seq.empty : int OSeq.t);
-    ignore (OSeq.empty : int Seq.t)
-*)
 
 type 'a seq = 'a Seq.t (* alias *)
 type 'a iter = ('a -> unit) -> unit
@@ -59,12 +35,6 @@ let rec ( -- ) i j () =
   else
     Cons (i, i - 1 -- j)
 
-(*$= & ~printer:pilist
-  [0;1;2;3;4;5] (0-- 5 |> to_list)
-  [0]           (0-- 0 |> to_list)
-  [5;4;3;2]     (5-- 2 |> to_list)
-*)
-
 let ( --^ ) i j =
   if i = j then
     empty
@@ -72,13 +42,6 @@ let ( --^ ) i j =
     i -- (j - 1)
   else
     i -- (j + 1)
-
-(*$= & ~printer:pilist
-  [1;2;3;4] (1 --^ 5 |> to_list)
-  [5;4;3;2] (5 --^ 1 |> to_list)
-  [1]       (1 --^ 2 |> to_list)
-  []        (0 --^ 0 |> to_list)
-*)
 
 let rec map f l () =
   match l () with
@@ -95,11 +58,6 @@ let rec fold_map f acc l () =
 let rec repeatedly f () = Cons (f (), repeatedly f)
 let rec repeat x () = Cons (x, repeat x)
 
-(*$T
-  repeat 0 |> take 4 |> to_list = [0;0;0;0]
-  repeat 1 |> take 0 |> to_list = []
-*)
-
 let init n f =
   let rec aux r () =
     if r >= n then
@@ -111,10 +69,6 @@ let init n f =
   in
   aux 0
 
-(*$T init
-  init 5 (fun i->i) |> to_list = [0;1;2;3;4]
-*)
-
 let mapi f l =
   let rec aux f l i () =
     match l () with
@@ -123,10 +77,6 @@ let mapi f l =
   in
   aux f l 0
 
-(*$T
-  mapi (fun i x -> i,x) (1 -- 3) |> to_list = [0, 1; 1, 2; 2, 3]
-*)
-
 let rec filter_map f (l : 'a t) () =
   match l () with
   | Nil -> Nil
@@ -134,11 +84,6 @@ let rec filter_map f (l : 'a t) () =
     (match f x with
     | None -> filter_map f l' ()
     | Some y -> Cons (y, filter_map f l'))
-
-(*$T
-  filter_map (fun x -> if x mod 2=0 then Some (x*3) else None) (1--10) |> to_list \
-    = [6;12;18;24;30]
-*)
 
 let filter f l =
   let rec aux f l () =
@@ -163,10 +108,6 @@ let iterate f x =
   in
   aux f x
 
-(*$T iterate
-  iterate ((+)1) 0 |> take 5 |> to_list = [0;1;2;3;4]
-*)
-
 let rec fold f acc l =
   match l () with
   | Nil -> acc
@@ -174,9 +115,6 @@ let rec fold f acc l =
 
 let fold_left = fold
 
-(*$T foldi
-  (foldi (fun i acc x ->(i,x)::acc) [] (of_list ["a"; "b"])) = [1,"b";0,"a"]
-  *)
 let foldi f acc l =
   let rec foldi f i acc l =
     match l () with
@@ -209,20 +147,10 @@ let iteri f l =
 
 let length l = fold (fun acc _ -> acc + 1) 0 l
 
-(*$T
-  cycle (of_list [1;2]) |> take 5 |> to_list = [1;2;1;2;1]
-  cycle (of_list [1; ~-1]) |> take 100_000 |> fold (+) 0 = 0
-*)
-
 let rec unfold f acc () =
   match f acc with
   | None -> Nil
   | Some (x, acc') -> Cons (x, unfold f acc')
-
-(*$T
-  let f = function  10 -> None | x -> Some (x, x+1) in \
-  unfold f 0 |> to_list = [0;1;2;3;4;5;6;7;8;9]
-*)
 
 let rec flat_map f l () =
   match l () with
@@ -233,15 +161,6 @@ and fm_app_ f l l' () =
   match l () with
   | Nil -> flat_map f l' ()
   | Cons (x, tl) -> Cons (x, fm_app_ f tl l')
-
-(*$Q
-  Q.(pair (fun1 Observable.int (small_list int)) (small_list int)) (fun (f, l) -> \
-    (of_list l |> flat_map (fun x -> of_list (Q.Fn.apply f x)) |> to_list) \
-    = CCList.flat_map (Q.Fn.apply f) l)
-  Q.(pair (fun1 Observable.int (small_list int)) (small_list int)) (fun (f, l) -> \
-    (of_list l |> flat_map (fun x -> of_list (Q.Fn.apply f x)) |> to_list) \
-    = (of_list l |> map (Q.Fn.apply f) |> map of_list |> flatten |> to_list))
-*)
 
 let take_nth n g =
   let rec aux i g () =
@@ -259,15 +178,6 @@ let rec nth i l =
   | Nil -> raise Not_found
   | Cons (x, _) when i = 0 -> x
   | Cons (_, tl) -> nth (i - 1) tl
-
-(*$= nth & ~printer:string_of_int
-  4 (nth 4 (0--10))
-  8 (nth 8 (0--10))
-*)
-
-(*$T
-  (try ignore (nth 11 (1--10)); false with Not_found -> true)
-*)
 
 let mem eq x gen =
   let rec mem eq x gen =
@@ -299,11 +209,6 @@ let min ~lt gen =
       x tl
   | Nil -> invalid_arg "min"
 
-(*$T
-  min ~lt:(<) (of_list [1;4;6;0;11; -2]) = ~-2
-  (try ignore (min ~lt:(<) empty); false with Invalid_argument _ -> true)
-*)
-
 let max ~lt gen =
   match gen () with
   | Cons (x, tl) ->
@@ -316,11 +221,6 @@ let max ~lt gen =
       x tl
   | Nil -> invalid_arg "max"
 
-(*$T
-  max ~lt:(<) (of_list [1;4;6;0;11; -2]) = 11
-  (try ignore (max ~lt:(<) empty); false with Invalid_argument _ -> true)
-*)
-
 let equal eq gen1 gen2 =
   let rec check gen1 gen2 =
     match gen1 (), gen2 () with
@@ -330,19 +230,9 @@ let equal eq gen1 gen2 =
   in
   check gen1 gen2
 
-(*$Q
-  (Q.pair (Q.list Q.small_int)(Q.list Q.small_int)) (fun (l1,l2) -> \
-    equal Stdlib.(=) (of_list l1)(of_list l2) = (l1 = l2))
-*)
-
 (* [partition p l] returns the elements that satisfy [p],
    and the elements that do not satisfy [p] *)
 let partition p gen = filter p gen, filter (fun x -> not (p x)) gen
-
-(*$T
-  partition (fun x -> x mod 2 = 0) (1--10) |> \
-    (fun (x,y)->to_list x, to_list y) = ([2;4;6;8;10], [1;3;5;7;9])
-*)
 
 let zip_index gen =
   let rec aux r gen () =
@@ -351,10 +241,6 @@ let zip_index gen =
     | Cons (x, tl) -> Cons ((r, x), aux (r + 1) tl)
   in
   aux 0 gen
-
-(*$T
-  zip_index (1--5) |> to_list = [0,1; 1,2; 2,3; 3,4; 4,5]
-*)
 
 let rec map2 f l1 l2 () =
   match l1 (), l2 () with
@@ -400,11 +286,6 @@ let unzip l =
   in
   first l, second l
 
-(*$Q
-  Q.(list (pair int int)) (fun l -> \
-    let l = of_list l in let a, b = unzip l in equal (=) l (zip a b))
-*)
-
 let compare cmp gen1 gen2 : int =
   let rec aux gen1 gen2 =
     match gen1 (), gen2 () with
@@ -420,22 +301,11 @@ let compare cmp gen1 gen2 : int =
   in
   aux gen1 gen2
 
-(*$Q
-  (Q.pair (Q.list Q.small_int)(Q.list Q.small_int)) (fun (l1,l2) -> \
-    let sign x = if x < 0 then -1 else if x=0 then 0 else 1 in \
-    sign (compare Stdlib.compare (of_list l1)(of_list l2)) = sign (Stdlib.compare l1 l2))
-*)
-
 let rec find p e =
   match e () with
   | Nil -> None
   | Cons (x, _) when p x -> Some x
   | Cons (_, tl) -> find p tl
-
-(*$T
-   find (fun x -> x>=5) (1--10) = Some 5
-   find (fun x -> x>5) (1--4) = None
-*)
 
 let rec find_map f e =
   match e () with
@@ -445,17 +315,7 @@ let rec find_map f e =
     | None -> find_map f tl
     | Some _ as res -> res)
 
-(*$T
-   find_map (fun x -> if x >= 5 then Some (- x) else None) (1--10) = Some (-5)
-   find_map (fun x -> if x > 5 then Some (- x) else None) (1--4) = None
-   find_map (fun _ -> None) (1--10) = None
-*)
-
 let sum e = fold ( + ) 0 e
-
-(*$T
-  sum (1--10) = 55
-*)
 
 (** {2 Fair Combinations} *)
 
@@ -504,10 +364,6 @@ let rec take_while p l () =
     else
       Nil
 
-(*$T
-  of_list [1;2;3;4] |> take_while (fun x->x < 4) |> to_list = [1;2;3]
-*)
-
 let rec drop n (l : 'a t) () =
   match l () with
   | l' when n = 0 -> l'
@@ -520,12 +376,6 @@ let rec drop_while p l () =
   | Cons (x, l') when p x -> drop_while p l' ()
   | Cons _ as res -> res
 
-(*$Q
-  (Q.pair (Q.list Q.small_int) Q.small_int) (fun (l,n) -> \
-    let s = of_list l in let s1, s2 = take n s, drop n s in \
-    append s1 s2 |> to_list = l  )
-*)
-
 let rec fold_while f acc gen =
   match gen () with
   | Nil -> acc
@@ -534,11 +384,6 @@ let rec fold_while f acc gen =
     (match cont with
     | `Stop -> acc
     | `Continue -> fold_while f acc tl)
-
-(*$T
-  fold_while (fun acc b -> if b then acc+1, `Continue else acc, `Stop) 0 \
-    (of_list [true;true;false;true]) = 2
-*)
 
 let scan f acc g : _ t =
   let rec aux f acc g () =
@@ -550,11 +395,6 @@ let scan f acc g : _ t =
   in
   aux f acc g
 
-(*$T scan
-  scan (fun acc x -> x+1::acc) [] (1--5) |> to_list \
-    = [[]; [2]; [3;2]; [4;3;2]; [5;4;3;2]; [6;5;4;3;2]]
-*)
-
 let unfold_scan f acc g =
   let rec aux f acc g () =
     match g () with
@@ -564,11 +404,6 @@ let unfold_scan f acc g =
       Cons (res, aux f acc tl)
   in
   aux f acc g
-
-(*$T unfold_scan
-  unfold_scan (fun acc x -> x+acc,acc) 0 (1--5) |> to_list \
-    = [0; 1; 3; 6; 10]
-*)
 
 let product_with f l1 l2 =
   (* take next element from [l1] *)
@@ -581,19 +416,7 @@ let product_with f l1 l2 =
   in
   loop l1
 
-(*$Q
-  Q.(pair (small_list int)(small_list int)) (fun (l1,l2) -> \
-    lsort (List.flatten@@List.map (fun x ->List.map (fun y->x,y) l2)l1) = \
-    lsort (product (of_list l1)(of_list l2) |> to_list))
-*)
-
 let product l1 l2 = product_with (fun x y -> x, y) l1 l2
-
-(*$R
-  let l = product (of_list [true;false]) (1--max_int) |> take 10 |> to_list in
-  assert_bool "a bit fair" (List.exists (fun (b,_) -> b=false) l)
-*)
-
 let app fs xs = product_with (fun f x -> f x) fs xs
 
 module Infix = struct
@@ -636,21 +459,6 @@ let rec cartesian_product l () =
     let tail = cartesian_product tail in
     product_with (fun x tl -> x :: tl) l1 tail ()
 
-(*$inject
-  let ofll l = l |> of_list |> map of_list
-  let cmp_lii_unord l1 l2 : bool =
-    List.sort CCOrd.compare l1 = List.sort CCOrd.compare l2
-*)
-
-(*$= & ~printer:Q.Print.(list (list int)) ~cmp:cmp_lii_unord
-  [[1;3;4];[1;3;5];[1;3;6];[2;3;4];[2;3;5];[2;3;6]] \
-    (to_list @@ cartesian_product @@ ofll [[1;2];[3];[4;5;6]])
-  [] (to_list @@ cartesian_product @@ ofll [[1;2];[];[4;5;6]])
-  [[]] (to_list @@ cartesian_product empty)
-  [[1;3;4;5;6];[2;3;4;5;6]] \
-    (to_list @@ cartesian_product @@ ofll [[1;2];[3];[4];[5];[6]])
-*)
-
 (* cartesian product of lists of lists *)
 let map_product_l f l =
   let l = map f l in
@@ -661,16 +469,6 @@ let rec group eq l () =
   | Nil -> Nil
   | Cons (x, l') ->
     Cons (cons x (take_while (eq x) l'), group eq (drop_while (eq x) l'))
-
-(*$T
-  of_list [1;1;1;2;2;3;3;1] |> group (=) |> map to_list |> to_list = \
-    [[1;1;1]; [2;2]; [3;3]; [1]]
-*)
-
-(*$Q
-    Q.(small_list int) (fun l -> \
-      (of_list l |> group (=) |> flatten |> to_list) = l)
-    *)
 
 let rec uniq_rec_ eq prev l () =
   match prev, l () with
@@ -705,11 +503,6 @@ let chunks n e =
   in
   aux e
 
-(*$T
-  chunks 25 (0--100) |> map Array.to_list |> to_list = \
-    List.map to_list [(0--24); (25--49);(50--74);(75--99);(100--100)]
-*)
-
 (* Put [x] between elements of [enum] *)
 let intersperse x g =
   let rec aux_with_sep g () =
@@ -721,12 +514,6 @@ let intersperse x g =
     match g () with
     | Nil -> Nil
     | Cons (x, g) -> Cons (x, aux_with_sep g)
-
-(*$= & ~printer:pilist
-  [] (intersperse 0 empty |> to_list)
-  [1] (intersperse 0 (return 1) |> to_list)
-  [1;0;2;0;3;0;4;0;5] (intersperse 0 (1--5) |> to_list)
-*)
 
 (* functional queue *)
 module F_queue = struct
@@ -785,26 +572,6 @@ let merge gens : _ t =
   let q = F_queue.push (Merge_start gens) F_queue.empty in
   next q
 
-(*$= & ~printer:Q.Print.(list int)
-  [1;2;3;4;5;6;7;8;9] \
-  (merge (of_list [of_list [1;3;5]; of_list [2;4;6]; of_list [7;8;9]]) \
-    |> to_list |> List.sort Stdlib.compare)
-  [1;2;3;4;5;6] (merge (of_list [of_list [1;3;6]; of_list [2;5]; of_list [4]]) |> to_list)
-*)
-
-(*$T
-  mem (=) (3,5) @@ \
-  take 20_000 @@ merge @@ \
-  map (fun i -> iterate succ 0 |> map (fun j -> (i, j))) @@ iterate succ 0
-*)
-
-(*$R
-  let e = of_list [1--3; 4--6; 7--9] in
-  let e' = merge e in
-  OUnit.assert_equal [1;2;3;4;5;6;7;8;9]
-    (to_list e' |> List.sort Stdlib.compare);
-*)
-
 let intersection cmp gen1 gen2 : _ t =
   let rec next x1 x2 () =
     match x1, x2 with
@@ -821,26 +588,10 @@ let intersection cmp gen1 gen2 : _ t =
   in
   fun () -> next (gen1 ()) (gen2 ()) ()
 
-(*$= & ~printer:pilist
-  [1;2;4;8] (intersection Stdlib.compare \
-    (of_list [1;1;2;3;4;8]) (of_list [1;2;4;5;6;7;8;9]) |> to_list)
-*)
-
 let rec zip_with f a b () =
   match a (), b () with
   | Cons (xa, tla), Cons (xb, tlb) -> Cons (f xa xb, zip_with f tla tlb)
   | _ -> Nil
-
-(*$Q
-  (Q.list Q.small_int) (fun l -> \
-    zip_with (fun x y->x,y) (of_list l) (of_list l) \
-      |> unzip |> fst |> to_list = l)
-*)
-
-(*$R
-  let e = zip_with (+) (repeat 1) (4--7) in
-  OUnit.assert_equal [5;6;7;8] (to_list e);
-*)
 
 let sorted_merge cmp gen1 gen2 : _ t =
   let rec next x1 x2 () =
@@ -856,12 +607,6 @@ let sorted_merge cmp gen1 gen2 : _ t =
   in
   fun () -> next (gen1 ()) (gen2 ()) ()
 
-(*$T
-  sorted_merge Stdlib.compare \
-  (of_list [1;2;2;3;5;10;100]) (of_list [2;4;5;6;11]) \
-    |> to_list = [1;2;2;2;3;4;5;5;6;10;11;100]
-*)
-
 let round_robin ?(n = 2) gen : _ t list =
   let rec start i =
     if i = n then
@@ -872,26 +617,6 @@ let round_robin ?(n = 2) gen : _ t list =
     )
   in
   start 0
-
-(*$= & ~printer:pilistlist
-  [[1;4;7;10]; [2;5;8;11]; [3;6;9;12]] \
-  (round_robin ~n:3 (1--12) |> List.map to_list)
-*)
-
-(*$R round_robin
-  let e = round_robin ~n:2 (1--10) in
-  match e with
-  | [a;b] ->
-    OUnit.assert_equal ~printer:pilist [1;3;5;7;9] (to_list a);
-    OUnit.assert_equal ~printer:pilist [2;4;6;8;10] (to_list b)
-  | _ -> OUnit.assert_failure "wrong list lenght"
-*)
-
-(*$R round_robin
-  let e = round_robin ~n:3 (1 -- 999) in
-  let l = List.map length e in
-  OUnit.assert_equal ~printer:pilist [333;333;333] l;
-*)
 
 (** {2 Combinatorics} *)
 
@@ -919,13 +644,6 @@ let permutations l =
   in
   aux (List.length l) l
 
-(*$= permutations & ~printer:pilistlist
-  [[1;2;3]; [1;3;2]; [2;1;3]; [2;3;1]; [3;1;2]; [3;2;1]] \
-  (permutations CCList.(1--3) |> to_list |> List.sort Stdlib.compare)
-  [[]] (permutations [] |> to_list)
-  [[1]] (permutations [1] |> to_list)
-*)
-
 let combinations n g =
   assert (n >= 0);
   let rec make_state n l () =
@@ -943,14 +661,6 @@ let combinations n g =
   in
   make_state n g
 
-(*$= & ~printer:pilistlist
-  [[1;2]; [1;3]; [1;4]; [2;3]; [2;4]; [3;4]] \
-    (combinations 2 (1--4) |> map (List.sort Stdlib.compare) \
-    |> to_list |> List.sort Stdlib.compare)
-  [[]] (combinations 0 (1--4) |> to_list)
-  [[1]] (combinations 1 (return 1) |> to_list)
-*)
-
 let power_set g : _ t =
   let rec make_state l () =
     match l with
@@ -965,15 +675,6 @@ let power_set g : _ t =
   in
   let l = fold (fun acc x -> x :: acc) [] g in
   make_state l
-
-(*$= & ~printer:pilistlist
-  [[]; [1]; [1;2]; [1;2;3]; [1;3]; [2]; [2;3]; [3]] \
-  (power_set (1--3) |> map (List.sort Stdlib.compare) \
-    |> to_list |> List.sort Stdlib.compare)
-  [[]] (power_set empty |> to_list)
-  [[]; [1]] (power_set (return 1) |> map (List.sort Stdlib.compare) \
-    |> to_list |> List.sort Stdlib.compare)
-*)
 
 (** {2 Conversions} *)
 
@@ -1025,15 +726,6 @@ let to_array l =
     iteri (fun i x -> a.(i) <- x) l;
     a
 
-(*$Q
-   Q.(array int) (fun a -> of_array a |> to_array = a)
-*)
-
-(*$T
-  of_array [| 1; 2; 3 |] |> to_list = [1;2;3]
-  of_list [1;2;3] |> to_array = [| 1; 2; 3; |]
-*)
-
 let to_buffer buf g = iter (Buffer.add_char buf) g
 
 let of_string ?(start = 0) ?len s =
@@ -1059,15 +751,6 @@ let to_string s =
   to_buffer buf s;
   Buffer.contents buf
 
-(*$Q
-   Q.(pair (list string) string) (fun (s, sep) -> String.concat sep s = concat_string ~sep (of_list s))
-*)
-(*$T
-  concat_string ~sep:"" (of_list [ "a"; "b"; "coucou" ]) = "abcoucou"
-  concat_string ~sep:"random" (return "a") = "a"
-  concat_string ~sep:"," (of_list [ "a"; "b"; "c"; ""; ""; "d" ]) = "a,b,c,,,d"
-  concat_string ~sep:"random" empty = ""
-*)
 let concat_string ~sep s =
   match s () with
   | Nil -> ""
@@ -1130,14 +813,6 @@ let of_gen g =
   in
   consume (ref (Of_gen_thunk g))
 
-(*$R
-  let g = let n = ref 0 in fun () -> Some (incr n; !n) in
-  let l = of_gen g in
-  assert_equal [1;2;3;4;5;6;7;8;9;10] (take 10 l |> to_list);
-  assert_equal [1;2;3;4;5;6;7;8;9;10] (take 10 l |> to_list);
-  assert_equal [11;12] (drop 10 l |> take 2 |> to_list);
-*)
-
 let rec of_gen_transient f () =
   match f () with
   | None -> Nil
@@ -1175,10 +850,6 @@ let lines g : _ t =
   in
   aux g (Buffer.create 16)
 
-(*$= & ~printer:Q.Print.(list string)
-  ["abc"; "de"; ""] (lines (of_string "abc\nde\n\n") |> to_list)
-*)
-
 let unlines g : _ t =
   let rec aux g st () =
     match st with
@@ -1192,11 +863,6 @@ let unlines g : _ t =
     | `Consume (s, i) -> Cons (s.[i], aux g (`Consume (s, i + 1)))
   in
   aux g `Next
-
-(*$Q
-  Q.printable_string (fun s -> \
-    of_string s |> lines |> unlines |> to_string |> String.trim = String.trim s)
-*)
 
 type 'a memoize = MemoThunk | MemoSave of 'a node | MemoExn of exn
 
@@ -1243,29 +909,6 @@ module Generator = struct
     aux [ x ]
 end
 
-(*$R
-  let naturals =
-    Generator.(let rec aux n = yield n>>= fun () -> aux (n+1) in run (aux 0))
-  in
-  let naturals' = unfold (fun n -> Some (n,n+1)) 0 in
-  assert_equal ~printer:Q.Print.(list int)
-    (take 100 naturals' |> to_list) (take 100 naturals |> to_list)
-*)
-
-(*$QR
-  Q.(small_list int) (fun l ->
-    let seq = of_list l in
-    let seq2 =
-      let open Generator in
-      let rec aux seq = match seq() with
-        | Nil -> empty
-        | Cons (x, tl) -> yield x >>= fun () -> aux tl
-      in
-      run (aux seq)
-    in
-    equal Stdlib.(=) seq seq2)
-*)
-
 module type HashedType = Hashtbl.HashedType
 
 let group_by_fold (type k) (module K : HashedType with type t = k) ~project
@@ -1292,19 +935,6 @@ let group_by key ~project seq =
 
 let group_count key seq =
   group_by_fold key ~project:(fun x -> x) ~fold:(fun n _x -> n + 1) ~init:0 seq
-
-(*$inject
-  module IntK = struct type t=int let equal=(=) let hash x=x land max_int end
-  *)
-
-(*$R
-  [1;2;3;3;2;2;3;4]
-   |> of_list
-   |> group_by (module IntK) ~project:(fun x->x)
-   |> map snd |> sort CCOrd.compare
-   |> to_list
-   |> OUnit.assert_equal [[1];[2;2;2];[3;3;3];[4]]
-*)
 
 let join_by (type k) (module Key : HashedType with type t = k) ~project_left
     ~project_right ~merge seq1 seq2 : _ t =
@@ -1487,8 +1117,3 @@ let pp ?(sep = ",") pp_item fmt l =
     pp fmt l'
 
 include Seq
-
-(* test for compat with seq *)
-(*$inject
-  module Foo : module type of Seq = OSeq
-*)
