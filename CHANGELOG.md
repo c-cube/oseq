@@ -1,3 +1,7 @@
+## 0.5.1
+
+- do not use qtest anymore
+
 ## 0.5
 
 - use ocamlformat
